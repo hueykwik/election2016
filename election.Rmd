@@ -11,13 +11,21 @@
 
 library(ggplot2)
 library(readr)
+library(dplyr)
 ```
 
 ```{r echo=FALSE, warning=FALSE, Load_the_Data}
 # Load the Data
 # Warnings come from extra comma and end of each row, safe to ignore.
-contributions <- read_csv('ca.csv')   
-contributions$cand_nm = factor(contributions$cand_nm)
+contributions <- read_csv("ca.csv")   
+contributions$cand_nm <- factor(contributions$cand_nm)
+
+parties <- read.csv('candidates.csv')
+parties$party <- factor(parties$party, 
+                        levels = c("Democratic", "Republican", "Libertarian", 
+                                   "Green", "Independent"),
+                        ordered = TRUE)
+contributions <- contributions %>% left_join(parties, by = c("cand_nm" = "name"))
 ```
 
 # Univariate Plots Section
@@ -29,32 +37,77 @@ dim(contributions)
 str(contributions)
 ```
 
-```{r}
+```{r echo=FALSE, Contribution Amounts}
 # How can there be negative contributions? Clue: Redesignation to general.
-ggplot(data=contributions, aes(x=contb_receipt_amt)) + 
+ggplot(data = contributions, aes(x = contb_receipt_amt)) +
   geom_histogram()
 
-range(contributions$contb_receipt_amt, na.rm = TRUE)
+summary(contributions$contb_receipt_amt)
 
-ggplot(data=contributions, aes(x=contb_receipt_amt)) + 
+contributions.gt2700 <- contributions %>% 
+  filter(contb_receipt_amt > 2700) %>%
+  select(cand_nm, contbr_nm, contb_receipt_amt, receipt_desc, memo_text)
+#range(contributions$contb_receipt_amt, na.rm = TRUE)
+
+View(contributions.gt2700 <- contributions %>% 
+  filter(contb_receipt_amt > 2700))
+
+ggplot(data=contributions.gt2700, aes(x = contb_receipt_amt)) + 
+  geom_histogram() +
+  scale_x_continuous(breaks=seq(2000, 12000, 2000))
+
+ggplot(data=contributions, aes(x = contb_receipt_amt)) + 
   geom_histogram() + 
   coord_cartesian(xlim = c(0,10000))
 
-ggplot(data=contributions, aes(x=contb_receipt_amt)) + 
+ggplot(data=contributions, aes(x = contb_receipt_amt)) + 
   geom_histogram() + 
   coord_cartesian(xlim = c(0,10000)) + 
   scale_y_log10()
 
-View(contributions[is.na(contributions$contb_receipt_dt),])
+#View(contributions[is.na(contributions$contb_receipt_dt),])
 
-View(contributions[contributions$contb_receipt_amt < 0,])
+dim(contributions[contributions$contb_receipt_amt < 0,])
+
+#View(contributions[contributions$contb_receipt_amt < 0,])
 ```
 
 Misc observations:
-- Why are there negative contributions?
-- Range of contributions range from -10000 to 10800
-- There are actually NAs for `contb_receipt_amt`
-- Most contributions seem to be smaller
+
+* Why are there negative contributions?
+* Range of contributions range from -10000 to 10800
+* There are actually NAs for `contb_receipt_amt`
+* Most contributions seem to be smaller
+* Fewer than 1% of the contributions are negative, so it's probably okay to ignore for analysis.
+However, still curious about why.
+* Isn't there a $2700 limit per candidate?
+
+```{r echo=FALSE, Party}
+ggplot(data = contributions, aes(x = party)) + geom_bar(stat = 'count')
+```
+
+Democrats had the most contributions by far.
+
+```{r echo=FALSE, Stats}
+range(contributions$contb_receipt_dt, na.rm = TRUE)
+length(unique(contributions$contbr_employer))
+length(unique(contributions$contbr_zip))
+length(unique(contributions$contbr_city))
+length(unique(contributions$contbr_nm))
+```
+
+* Date range: April 1, 2015 to October 31, 2016
+* 60587 unique employers
+* 136234 unique zipcodes
+* 2418 unique cities
+* 209688 unique contributors 
+
+TODOs:
+
+(/) Add Party as a column, since I'll want to look at that
+* See contributions over time per candidate
+* Do contribution sizes differ for differing candidates? Like is Bernie Sanders the candidate of the 99%?
+(/) What's the range of dates?
 
 # Univariate Analysis
 
@@ -65,6 +118,7 @@ Misc observations:
 ### What other features in the dataset do you think will help support your investigation into your feature(s) of interest?
 
 ### Did you create any new variables from existing variables in the dataset?
+Party.
 
 ### Of the features you investigated, were there any unusual distributions? Did you perform any operations on the data to tidy, adjust, or change the form of the data? If so, why did you do this?
 
