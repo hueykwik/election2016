@@ -1,4 +1,4 @@
-TITLE by YOUR_NAME_HERE
+2016 Presidential Election Contributions for California  by Huey Kwik
 ========================================================
 
 ```{r echo=FALSE, message=FALSE, warning=FALSE, packages}
@@ -10,17 +10,51 @@ TITLE by YOUR_NAME_HERE
 # You should set echo=FALSE for all code chunks in your file.
 
 library(ggplot2)
+library(readr)
 ```
 
-```{r echo=FALSE, Load_the_Data}
+```{r echo=FALSE, warning=FALSE, Load_the_Data}
 # Load the Data
-
+# Warnings come from extra comma and end of each row, safe to ignore.
+contributions <- read_csv('ca.csv')   
+contributions$cand_nm = factor(contributions$cand_nm)
 ```
 
 # Univariate Plots Section
-```{r echo=FALSE, Univariate_Plots}
 
+Our dataset consists of 18 variables with over 1 million observations.
+
+```{r echo=FALSE, Univariate_Plots}
+dim(contributions)
+str(contributions)
 ```
+
+```{r}
+# How can there be negative contributions? Clue: Redesignation to general.
+ggplot(data=contributions, aes(x=contb_receipt_amt)) + 
+  geom_histogram()
+
+range(contributions$contb_receipt_amt, na.rm = TRUE)
+
+ggplot(data=contributions, aes(x=contb_receipt_amt)) + 
+  geom_histogram() + 
+  coord_cartesian(xlim = c(0,10000))
+
+ggplot(data=contributions, aes(x=contb_receipt_amt)) + 
+  geom_histogram() + 
+  coord_cartesian(xlim = c(0,10000)) + 
+  scale_y_log10()
+
+View(contributions[is.na(contributions$contb_receipt_dt),])
+
+View(contributions[contributions$contb_receipt_amt < 0,])
+```
+
+Misc observations:
+- Why are there negative contributions?
+- Range of contributions range from -10000 to 10800
+- There are actually NAs for `contb_receipt_amt`
+- Most contributions seem to be smaller
 
 # Univariate Analysis
 
