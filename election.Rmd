@@ -195,6 +195,8 @@ contributions.candidates <- contributions %>%
   arrange(-n) %>%
   mutate(cand_nm = factor(cand_nm, cand_nm)) 
 
+cand.order = levels(contributions.candidates$cand_nm)
+
 CreatePlot <- function(df, x, y, ylabel) {
   df <- df %>% arrange_(y) 
     
@@ -218,15 +220,33 @@ CreatePlot(contributions.candidates, "cand_nm", "median", "Median Contribution, 
 # Look at raw data:
 
 summary(contributions %>% 
-  filter(cand_nm == "Sanders, Bernard", contb_receipt_amt > 0) %>%
+  filter(cand_nm == "Sanders, Bernard") %>%
   select(contb_receipt_amt))
 
 summary(contributions %>% 
-  filter(cand_nm == "Clinton, Hillary Rodham", contb_receipt_amt > 0) %>%
+  filter(cand_nm == "Clinton, Hillary Rodham") %>%
   select(contb_receipt_amt))
+
+levels(contributions$cand_nm) = rev(cand.order)
+
+ggplot(data = contributions, aes(x = cand_nm, y = contb_receipt_amt)) + 
+  geom_boxplot() + coord_flip()
+
+ggplot(data = subset(contributions, contributions$contb_receipt_amt > 0), 
+       aes(x = cand_nm, y = contb_receipt_amt)) + 
+  geom_boxplot() + coord_flip()
 ```
 
 I was a bit surprised that Clinton's median donation was actually lower than Sanders's.
+
+For the box plots, I sorted the candidates from higher number of donations to lowest.
+For Republicans and Democrats, that roughly seems to correspond with how long they stayed in the race, 
+but I'll visualize that later.
+
+In the first box plot, we can see that some candidates actually have many donations
+above the individual limit of $2700. Many also have negative donations, which could
+either be refunds or reattributions. It is interesting that Hillary Clinton
+
 
 # Bivariate Analysis
 
