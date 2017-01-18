@@ -143,7 +143,7 @@ ggplot(data = contributions, aes(x = party)) + geom_bar(stat = 'count')
 Democrats had the most contributions by far.
 
 ### Misc. Stats
-```{r echo=FALSE, Misc_Stats}
+```{r echo=FALSE, results="hide", Misc_Stats}
 range(contributions$contb_receipt_dt, na.rm = TRUE)
 length(unique(contributions$contbr_employer))
 length(unique(contributions$contbr_zip))
