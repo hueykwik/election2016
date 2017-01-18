@@ -245,7 +245,11 @@ but I'll visualize that later.
 
 In the first box plot, we can see that some candidates actually have many donations
 above the individual limit of $2700. Many also have negative donations, which could
-either be refunds or reattributions. It is interesting that Hillary Clinton
+either be refunds or reattributions. 
+
+Some candidates did better at staying within contribution limits than others. For 
+instance, Clinton did not have a single negative contribution or a contribution that
+exceeded the individual limit. The same could be said for Ben Carson and Jeb Bush.
 
 
 # Bivariate Analysis
