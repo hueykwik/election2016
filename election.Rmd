@@ -37,7 +37,7 @@ dim(contributions)
 str(contributions)
 ```
 
-```{r echo=FALSE, Contribution Amounts}
+```{r echo=FALSE, warning=FALSE, Contribution_Amounts}
 # How can there be negative contributions? Clue: Redesignation to general.
 ggplot(data = contributions, aes(x = contb_receipt_amt)) +
   geom_histogram()
@@ -45,12 +45,12 @@ ggplot(data = contributions, aes(x = contb_receipt_amt)) +
 summary(contributions$contb_receipt_amt)
 
 contributions.gt2700 <- contributions %>% 
-  filter(contb_receipt_amt > 2700) %>%
+  filter(contb_receipt_amt >= 2700) %>%
   select(cand_nm, contbr_nm, contb_receipt_amt, receipt_desc, memo_text)
 #range(contributions$contb_receipt_amt, na.rm = TRUE)
 
-View(contributions.gt2700 <- contributions %>% 
-  filter(contb_receipt_amt > 2700))
+# View(contributions.gt2700 <- contributions %>% 
+#   filter(contb_receipt_amt > 2700))
 
 ggplot(data=contributions.gt2700, aes(x = contb_receipt_amt)) + 
   geom_histogram() +
@@ -80,7 +80,33 @@ Misc observations:
 * Most contributions seem to be smaller
 * Fewer than 1% of the contributions are negative, so it's probably okay to ignore for analysis.
 However, still curious about why.
-* Isn't there a $2700 limit per candidate?
+* Isn't there a $2700 limit per candidate? 
+  * Try joining contributors who are over the limit with the rest of dataset, see if they get refunds
+
+```{r echo=FALSE, Double_Counting_Contributions}
+laguna.miguel.zip <- 92677
+names <- c('HOROWITZ, DAVID', 'HOROWITZ, MICHELLE')
+
+contributions %>% 
+  filter(contbr_nm %in% names, cand_nm == "Walker, Scott") %>%
+  select(contbr_nm, contb_receipt_dt, contb_receipt_amt, tran_id, election_tp)
+```
+
+Summing up `contb_receipt_amt` seems to be double-counting! I asked the FEC about
+this, and they pointed me to the [Individual Contributor Search](http://www.fec.gov/finance/disclosure/norindsea.shtml).
+This interface allows users to look at each contributor record in more detail.
+
+From there, I was able to piece this story:
+
+* On 7/6/2015, David Horowitz donates a total of $10,800 to Scott Walker’s primary campaign.
+* Of that $10,800, he reattributes $5,400 to Michelle Horowitz. 
+* He redesignates $2,700 to Walker’s General Election campaign. This money gets refunded on 11/16/2015.
+* The $5,400 seems appears twice, in the 3rd and 8th row of the table.
+* Assuming that those records are duplicates, then Michelle Horowitz reattributes $2,700 to Walker's General Election campaign.
+
+If this story is true, then these donations are within the campaign contribution limits for primary and
+general elections. From an election integrity standpoint, this is good. However, when doing aggregate
+analysis of this data, we should be aware that some of these contributions may be double counted.
 
 ```{r echo=FALSE, Party}
 ggplot(data = contributions, aes(x = party)) + geom_bar(stat = 'count')
@@ -88,7 +114,7 @@ ggplot(data = contributions, aes(x = party)) + geom_bar(stat = 'count')
 
 Democrats had the most contributions by far.
 
-```{r echo=FALSE, Stats}
+```{r echo=FALSE, Misc_Stats}
 range(contributions$contb_receipt_dt, na.rm = TRUE)
 length(unique(contributions$contbr_employer))
 length(unique(contributions$contbr_zip))
