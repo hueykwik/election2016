@@ -1,5 +1,6 @@
-2016 Presidential Election Contributions for California  by Huey Kwik
-========================================================
+2016 Presidential Election Contributions - California
+=====================================================
+Huey Kwik
 
 ```{r echo=FALSE, message=FALSE, warning=FALSE, packages}
 # Load all of the packages that you end up using
@@ -12,6 +13,8 @@
 library(ggplot2)
 library(readr)
 library(dplyr)
+library(Hmisc)
+library(scales)
 ```
 
 ```{r echo=FALSE, warning=FALSE, Load_the_Data}
@@ -28,61 +31,76 @@ parties$party <- factor(parties$party,
 contributions <- contributions %>% left_join(parties, by = c("cand_nm" = "name"))
 ```
 
-# Univariate Plots Section
+## Univariate Plots
 
-Our dataset consists of 18 variables with over 1 million observations.
+### Structure of the Data
+
+Our original dataset consists of 18 variables with over 1 million observations.
+I also added party information for each candidate.
 
 ```{r echo=FALSE, Univariate_Plots}
 dim(contributions)
-str(contributions)
+list.tree(contributions)
 ```
 
 ```{r echo=FALSE, warning=FALSE, Contribution_Amounts}
 # How can there be negative contributions? Clue: Redesignation to general.
 ggplot(data = contributions, aes(x = contb_receipt_amt)) +
-  geom_histogram()
+  geom_histogram(binwidth=200) +
+  scale_y_log10() +
+  ylab("log(count)")
 
 summary(contributions$contb_receipt_amt)
 
-contributions.gt2700 <- contributions %>% 
-  filter(contb_receipt_amt >= 2700) %>%
-  select(cand_nm, contbr_nm, contb_receipt_amt, receipt_desc, memo_text)
+sprintf("Number of negative contributions: %d", dim(contributions[contributions$contb_receipt_amt < 0,])[1])
+
 #range(contributions$contb_receipt_amt, na.rm = TRUE)
 
 # View(contributions.gt2700 <- contributions %>% 
 #   filter(contb_receipt_amt > 2700))
 
-ggplot(data=contributions.gt2700, aes(x = contb_receipt_amt)) + 
-  geom_histogram() +
-  scale_x_continuous(breaks=seq(2000, 12000, 2000))
+# ggplot(data=contributions.gt2700, aes(x = contb_receipt_amt)) + 
+#   geom_histogram() +
+#   scale_x_continuous(breaks=seq(2000, 12000, 2000))
+# 
+# ggplot(data=contributions, aes(x = contb_receipt_amt)) +
+#   geom_histogram() +
+#   coord_cartesian(xlim = c(0,10000))
 
 ggplot(data=contributions, aes(x = contb_receipt_amt)) + 
-  geom_histogram() + 
-  coord_cartesian(xlim = c(0,10000))
-
-ggplot(data=contributions, aes(x = contb_receipt_amt)) + 
-  geom_histogram() + 
+  geom_histogram(binwidth=200) + 
   coord_cartesian(xlim = c(0,10000)) + 
-  scale_y_log10()
+  scale_y_log10() + 
+  ylab("log(count)")
+
+contributions.gte2700 <- contributions %>%
+  filter(contb_receipt_amt >= 2700) %>%
+  select(cand_nm, contbr_nm, contb_receipt_amt, receipt_desc, memo_text)
+
+ggplot(data=contributions.gte2700, aes(x = contb_receipt_amt)) + 
+  geom_histogram(binwidth=200) +
+  scale_x_continuous(breaks=c(2700, 5400, 8100, 10800)) +
+  scale_y_log10() +
+  ylab("log(count")
+  
 
 #View(contributions[is.na(contributions$contb_receipt_dt),])
-
-dim(contributions[contributions$contb_receipt_amt < 0,])
-
 #View(contributions[contributions$contb_receipt_amt < 0,])
 ```
 
-Misc observations:
+Observations:
 
+* I used log(count) so we could more easily see the data on a chart.
 * Why are there negative contributions?
 * Range of contributions range from -10000 to 10800
-* There are actually NAs for `contb_receipt_amt`
+* There is one missing value for `contb_receipt_amt` in the dataset.
 * Most contributions seem to be smaller
-* Fewer than 1% of the contributions are negative, so it's probably okay to ignore for analysis.
+* Fewer than 1% of the contributions are negative, so it's probably okay to continue analysis and just note this.
 However, still curious about why.
-* Isn't there a $2700 limit per candidate? 
-  * Try joining contributors who are over the limit with the rest of dataset, see if they get refunds
+* Isn't there a $2700 contribution limit for individuals? We could check if contributions greater than $2700
+also have negative contributions.
 
+### Double Counting Contributions?
 ```{r echo=FALSE, Double_Counting_Contributions}
 laguna.miguel.zip <- 92677
 names <- c('HOROWITZ, DAVID', 'HOROWITZ, MICHELLE')
@@ -92,9 +110,14 @@ contributions %>%
   select(contbr_nm, contb_receipt_dt, contb_receipt_amt, tran_id, election_tp)
 ```
 
-Summing up `contb_receipt_amt` seems to be double-counting! I asked the FEC about
-this, and they pointed me to the [Individual Contributor Search](http://www.fec.gov/finance/disclosure/norindsea.shtml).
-This interface allows users to look at each contributor record in more detail.
+I looked at some examples of contributions that were above $2700 and came across
+David and Michelle Horowitz. They appear to be a couple who donated to Scott
+Walker's campaign.
+
+Summing up `contb_receipt_amt`, we get $10,800. Is this an instance of people contributing over the limit? 
+
+From what I can tell, this instead seems to be double-counting! The FEC provides an [Individual Contributor Search](http://www.fec.gov/finance/disclosure/norindsea.shtml), which lets us look at each contributor record
+in more detail. 
 
 From there, I was able to piece this story:
 
@@ -105,15 +128,21 @@ From there, I was able to piece this story:
 * Assuming that those records are duplicates, then Michelle Horowitz reattributes $2,700 to Walker's General Election campaign.
 
 If this story is true, then these donations are within the campaign contribution limits for primary and
-general elections. From an election integrity standpoint, this is good. However, when doing aggregate
-analysis of this data, we should be aware that some of these contributions may be double counted.
+general elections. From an election integrity standpoint, this is good. 
 
+However, when doing analysis of this data, we should be aware of this discrepancy in our analysis.
+A contribution like Michelle Horowitz's reattributed $5,400 may be double-counted in our analysis. Also,
+a large contribution of $10,800 by David Horowitz will count towards calculating the mean, even though
+it gets reattributed into smaller contributions later.
+
+### Party
 ```{r echo=FALSE, Party}
 ggplot(data = contributions, aes(x = party)) + geom_bar(stat = 'count')
 ```
 
 Democrats had the most contributions by far.
 
+### Misc. Stats
 ```{r echo=FALSE, Misc_Stats}
 range(contributions$contb_receipt_dt, na.rm = TRUE)
 length(unique(contributions$contbr_employer))
@@ -128,12 +157,6 @@ length(unique(contributions$contbr_nm))
 * 2418 unique cities
 * 209688 unique contributors 
 
-TODOs:
-
-(/) Add Party as a column, since I'll want to look at that
-* See contributions over time per candidate
-* Do contribution sizes differ for differing candidates? Like is Bernie Sanders the candidate of the 99%?
-(/) What's the range of dates?
 
 # Univariate Analysis
 
@@ -149,11 +172,61 @@ Party.
 ### Of the features you investigated, were there any unusual distributions? Did you perform any operations on the data to tidy, adjust, or change the form of the data? If so, why did you do this?
 
 
+TODOs:
+
+* Visualize total contributions for candidate, mean, median
+* See contributions over time per candidate
+* Do contribution sizes differ for differing candidates? Like is Bernie Sanders the candidate of the 99%?
+* Look at distribution of contributions for candidates... box plot
+
 
 # Bivariate Plots Section
-```{r echo=FALSE, Bivariate_Plots}
 
+## Contributions per Candidate
+```{r echo=FALSE, Aggregate_Contributions}
+contributions.candidates <- contributions %>% 
+  filter(contb_receipt_amt > 0) %>%
+  group_by(cand_nm) %>%
+  summarise(total = sum(contb_receipt_amt, na.rm = TRUE),
+            mean = mean(contb_receipt_amt, na.rm = TRUE),
+            median = median(as.numeric(contb_receipt_amt), na.rm = TRUE),
+            n = n(),
+            party = first(party)) %>%
+  arrange(-n) %>%
+  mutate(cand_nm = factor(cand_nm, cand_nm)) 
+
+CreatePlot <- function(df, x, y, ylabel) {
+  df <- df %>% arrange_(y) 
+    
+  df[[x]] = factor(df[[x]], df[[x]], ordered = TRUE)
+
+  p <- ggplot(data = df, aes_string(x = x, y = y)) + 
+    geom_bar(stat = "identity") +
+    theme(axis.text.x = element_text(angle = 90, hjust = 1)) + 
+    ylab(label = ylabel) +
+    scale_y_continuous(labels = comma) + 
+    coord_flip() 
+  p
+}
+
+CreatePlot(contributions.candidates, "cand_nm", "n", "Number of Contributions")
+CreatePlot(contributions.candidates, "cand_nm", "total", "Total Contributions, Dollars")
+CreatePlot(contributions.candidates, "cand_nm", "mean", "Average Contribution, Dollars")
+CreatePlot(contributions.candidates, "cand_nm", "median", "Median Contribution, Dollars")
+
+# Bit surprised that HRC's median contribution is about the same as Bernie's. 
+# Look at raw data:
+
+summary(contributions %>% 
+  filter(cand_nm == "Sanders, Bernard", contb_receipt_amt > 0) %>%
+  select(contb_receipt_amt))
+
+summary(contributions %>% 
+  filter(cand_nm == "Clinton, Hillary Rodham", contb_receipt_amt > 0) %>%
+  select(contb_receipt_amt))
 ```
+
+I was a bit surprised that Clinton's median donation was actually lower than Sanders's.
 
 # Bivariate Analysis
 
