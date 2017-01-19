@@ -15,6 +15,9 @@ library(readr)
 library(dplyr)
 library(scales)
 library(stringr)
+library(maps)
+library(mapdata)
+library(ggmap)
 ```
 
 ```{r echo=FALSE, warning=FALSE, Load_the_Data}
@@ -42,6 +45,8 @@ contributions <- contributions %>% left_join(parties, by = c("cand_nm" = "name")
 dim(contributions)
 str(contributions)
 ```
+
+## Distribution of Contribution Amounts
 
 ```{r echo=FALSE, warning=FALSE, Contribution_Amounts}
 # How can there be negative contributions? Clue: Redesignation to general.
@@ -151,6 +156,32 @@ length(unique(contributions$contbr_nm))
 length(unique(contributions$contbr_occupation))
 ```
 
+## Contribution Locations
+
+```{r echo=FALSE, Map_Zips}
+usa <- map_data("usa")
+states <- map_data("states")
+zipcodes <- read.csv("zipcodes.csv")
+names(zipcodes) <- c("zip", "lat", "lon")
+
+contributions.zipcodes <- unique(substr(contributions$contbr_zip, 1, 5))
+contributions.zipcodes <- as.numeric(contributions.zipcodes)
+
+contributions.zipcodes <- data.frame(zip = contributions.zipcodes, stringsAsFactors = FALSE)
+
+contributions.zipcodes <- inner_join(contributions.zipcodes, zipcodes)
+
+ggplot() + 
+  geom_polygon(data = usa, aes(x = long, y = lat, group = group), fill=NA, color="black") + 
+  geom_polygon(data = states, aes(x = long, y = lat, fill = region, group = group)) + 
+  coord_fixed(1.3) +
+  geom_point(data = contributions.zipcodes, aes(x = lon, y = lat)) +
+  guides(fill = FALSE)
+
+```
+
+At first, I assumed that all the donations would be from California, but it turns out
+that donations came from various parts of the United States.
 
 # Univariate Analysis
 
@@ -308,7 +339,28 @@ Observations:
 
 # Multivariate Plots Section
 
+
 ```{r echo=FALSE, Multivariate_Plots}
+# Goal: plot a map of campaign contributions, size of point is size of contribution, color is party
+
+# View(zipcodes)
+# tail(zipcodes)
+# usa <- map_data()
+# ggplot() +
+#   geom_polygon(data = usa, aes(x = long, y = lat, group = group), fill = NA, color = "red") +
+#   coord_fixed(1.3) + 
+#   geom_point(data = tail(zipcodes), aes(x = lon, y = lat))
+# 
+# sbbox <- make_bbox(lon = zipcodes$lon, lat = zipcodes$lat, f = .1)
+# 
+# ll_means <- sapply(zipcodes[2:3], mean)
+# ll_means
+# 
+# sq_map <- get_map(location = sbbox, maptype = "toner", source = "stamen")
+# ggmap(sq_map) + geom_point(data = zipcodes, mapping = aes(x = lon, y = lat), color = "red")
+# 
+# sq_map <- get_map(location = sbbox, maptype = "satellite", source = "google")
+# ggmap(sq_map) + geom_point(data = zipcodes, mapping = aes(x = lon, y = lat), color = "red", zoom = 1)
 
 ```
 
