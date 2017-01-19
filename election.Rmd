@@ -282,7 +282,7 @@ contributions.candidates <- contributions %>%
             n = n(),
             party = first(party)) %>%
   arrange(-n) %>%
-  mutate(cand_nm = factor(cand_last_name, cand_last_name)) 
+  mutate(cand_last_name = factor(cand_last_name, cand_last_name)) 
 
 cand.order = levels(contributions.candidates$cand_last_name)
 
@@ -316,13 +316,13 @@ summary(contributions %>%
   filter(cand_nm == "Clinton, Hillary Rodham") %>%
   select(contb_receipt_amt))
 
-contributions$cand_nm = factor(contributions$cand_nm, levels=rev(cand.order), ordered=TRUE)
+contributions$cand_last_name = factor(contributions$cand_last_name, levels=rev(cand.order), ordered=TRUE)
 
-ggplot(data = contributions, aes(x = cand_nm, y = contb_receipt_amt)) + 
+ggplot(data = contributions, aes(x = cand_last_name, y = contb_receipt_amt)) + 
   geom_boxplot() + coord_flip()
 
 ggplot(data = subset(contributions, contributions$contb_receipt_amt > 0), 
-       aes(x = cand_nm, y = contb_receipt_amt)) + 
+       aes(x = cand_last_name, y = contb_receipt_amt)) + 
   geom_boxplot() + coord_flip()
 ```
 
