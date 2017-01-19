@@ -13,15 +13,20 @@ Huey Kwik
 library(ggplot2)
 library(readr)
 library(dplyr)
-library(Hmisc)
 library(scales)
+library(stringr)
 ```
 
 ```{r echo=FALSE, warning=FALSE, Load_the_Data}
 # Load the Data
 # Warnings come from extra comma and end of each row, safe to ignore.
 contributions <- read_csv("ca.csv")   
+contributions$cand_last_name <- factor(str_split(contributions$cand_nm, ",", simplify = TRUE)[,1])
 contributions$cand_nm <- factor(contributions$cand_nm)
+contributions$election_tp <- factor(contributions$election_tp)
+
+contributions <- contributions %>% 
+  mutate(contb_receipt_dt = as.Date(contb_receipt_dt, format = "%d-%b-%y"))
 
 parties <- read.csv('candidates.csv')
 parties$party <- factor(parties$party, 
@@ -31,16 +36,11 @@ parties$party <- factor(parties$party,
 contributions <- contributions %>% left_join(parties, by = c("cand_nm" = "name"))
 ```
 
-## Univariate Plots
-
-### Structure of the Data
-
-Our original dataset consists of 18 variables with over 1 million observations.
-I also added party information for each candidate.
+# Univariate Plots
 
 ```{r echo=FALSE, Univariate_Plots}
 dim(contributions)
-list.tree(contributions)
+str(contributions)
 ```
 
 ```{r echo=FALSE, warning=FALSE, Contribution_Amounts}
@@ -140,62 +140,91 @@ it gets reattributed into smaller contributions later.
 ggplot(data = contributions, aes(x = party)) + geom_bar(stat = 'count')
 ```
 
-Democrats had the most contributions by far.
+Democrats had the most contributions by far, which makes sense in California.
 
-### Misc. Stats
 ```{r echo=FALSE, results="hide", Misc_Stats}
 range(contributions$contb_receipt_dt, na.rm = TRUE)
 length(unique(contributions$contbr_employer))
 length(unique(contributions$contbr_zip))
 length(unique(contributions$contbr_city))
 length(unique(contributions$contbr_nm))
+length(unique(contributions$contbr_occupation))
 ```
-
-* Date range: April 1, 2015 to October 31, 2016
-* 60587 unique employers
-* 136234 unique zipcodes
-* 2418 unique cities
-* 209688 unique contributors 
 
 
 # Univariate Analysis
 
 ### What is the structure of your dataset?
 
+There are 1,073,271 records in the dataset with 18 features. 
+
+The features are as follows:
+
+* committee id
+* candidate id
+* candidate name
+* contributor name
+* contributor's city
+* contributor state
+* contributor zipcode
+* contributor's employer
+* contributor's occupation
+* contribution amount
+* contribution date
+* receipt description
+* memo code
+* memo text
+* form type
+* file number
+* transaction id
+* election type
+
+Factors: Candidate name, election type (Primary 2016, General 2016, or Primary 2020)
+
+Other observations:
+* Date range: April 1, 2015 to October 31, 2016
+* There are 60587 unique employers.
+* There are 136234 unique zipcodes.
+* There are 2418 unique cities.
+* There are 209688 unique contributors.
+* There are 26654 unique occupations. 
+* There are seven donations designated for Primary 2020. They are all redesignations from
+general election contributions to Lindsey Graham.
+
 ### What is/are the main feature(s) of interest in your dataset?
+
+I'm mostly interested in looking at patterns/differences in contributions among
+different candidates. So for me, the main features of interest are candidate name,
+contribution amount, and date.
 
 ### What other features in the dataset do you think will help support your investigation into your feature(s) of interest?
 
+Zipcode, employers, occupation, and party might provide other angles into the data.
+
 ### Did you create any new variables from existing variables in the dataset?
-Party.
+
+I created a Party variable to represent the political party for each canddiate. 
 
 ### Of the features you investigated, were there any unusual distributions? Did you perform any operations on the data to tidy, adjust, or change the form of the data? If so, why did you do this?
 
+When histogramming the contribution amounts, I used a log scale since one of the bins was really large. This made it easier to see the rest of the data.
 
-TODOs:
-
-* Visualize total contributions for candidate, mean, median
-* See contributions over time per candidate
-* Do contribution sizes differ for differing candidates? Like is Bernie Sanders the candidate of the 99%?
-* Look at distribution of contributions for candidates... box plot
-
-
-# Bivariate Plots Section
+# Bivariate Plots
 
 ## Contributions per Candidate
-```{r echo=FALSE, Aggregate_Contributions}
+```{r echo = FALSE, warning = FALSE, Aggregate_Contributions}
 contributions.candidates <- contributions %>% 
   filter(contb_receipt_amt > 0) %>%
-  group_by(cand_nm) %>%
+  group_by(cand_last_name) %>%
   summarise(total = sum(contb_receipt_amt, na.rm = TRUE),
             mean = mean(contb_receipt_amt, na.rm = TRUE),
             median = median(as.numeric(contb_receipt_amt), na.rm = TRUE),
             n = n(),
             party = first(party)) %>%
   arrange(-n) %>%
-  mutate(cand_nm = factor(cand_nm, cand_nm)) 
+  mutate(cand_nm = factor(cand_last_name, cand_last_name)) 
 
-cand.order = levels(contributions.candidates$cand_nm)
+cand.order = levels(contributions.candidates$cand_last_name)
 
 CreatePlot <- function(df, x, y, ylabel) {
   df <- df %>% arrange_(y) 
@@ -211,23 +240,23 @@ CreatePlot <- function(df, x, y, ylabel) {
   p
 }
 
-CreatePlot(contributions.candidates, "cand_nm", "n", "Number of Contributions")
-CreatePlot(contributions.candidates, "cand_nm", "total", "Total Contributions, Dollars")
-CreatePlot(contributions.candidates, "cand_nm", "mean", "Average Contribution, Dollars")
-CreatePlot(contributions.candidates, "cand_nm", "median", "Median Contribution, Dollars")
+CreatePlot(contributions.candidates, "cand_last_name", "n", "Number of Contributions")
+CreatePlot(contributions.candidates, "cand_last_name", "total", "Total Contributions, Dollars")
+CreatePlot(contributions.candidates, "cand_last_name", "mean", "Average Contribution, Dollars")
+CreatePlot(contributions.candidates, "cand_last_name", "median", "Median Contribution, Dollars")
 
 # Bit surprised that HRC's median contribution is about the same as Bernie's. 
 # Look at raw data:
 
-summary(contributions %>% 
+summary(contributions %>%
   filter(cand_nm == "Sanders, Bernard") %>%
   select(contb_receipt_amt))
 
-summary(contributions %>% 
+summary(contributions %>%
   filter(cand_nm == "Clinton, Hillary Rodham") %>%
   select(contb_receipt_amt))
 
-levels(contributions$cand_nm) = rev(cand.order)
+contributions$cand_nm = factor(contributions$cand_nm, levels=rev(cand.order), ordered=TRUE)
 
 ggplot(data = contributions, aes(x = cand_nm, y = contb_receipt_amt)) + 
   geom_boxplot() + coord_flip()
@@ -237,20 +266,37 @@ ggplot(data = subset(contributions, contributions$contb_receipt_amt > 0),
   geom_boxplot() + coord_flip()
 ```
 
-I was a bit surprised that Clinton's median donation was actually lower than Sanders's.
+Since Sanders is often portrayed as the more progressive, blue-collar candidate,
+it is interesting to see that Clinton's median donation is actually lower. 
+It is interesting that Clinton and Sanders average donation amounts are roughly the same. 
+Clinton's median donation is actually lower, i.e. $27 vs. $25. Of course, this data
+does not include donations to Political Action Committees, so that could be a factor.
 
-For the box plots, I sorted the candidates from higher number of donations to lowest.
-For Republicans and Democrats, that roughly seems to correspond with how long they stayed in the race, 
-but I'll visualize that later.
+It does seem that having a lower average donation, be it median or mean, seems to reflect
+having more mass appeal. For instance, Chris Christie has 
+
+For the box plots, I sorted the candidates from highest number of donations to lowest. 
 
 In the first box plot, we can see that some candidates actually have many donations
 above the individual limit of $2700. Many also have negative donations, which could
 either be refunds or reattributions. 
 
-Some candidates did better at staying within contribution limits than others. For 
-instance, Clinton did not have a single negative contribution or a contribution that
-exceeded the individual limit. The same could be said for Ben Carson and Jeb Bush.
+In the second box plot, I excluded negative contributions to see if we could see any other patterns.
 
+## Life of a Campaign
+```{r echo=FALSE, warning=FALSE, Campaign_Duration}
+ggplot(data = contributions, aes(x = contb_receipt_dt)) + geom_histogram()
+
+ggplot(data = contributions, aes(x = contb_receipt_dt)) +
+  geom_histogram(bins = 100) +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
+  facet_wrap(~cand_last_name, scales = "free_y")
+```
+
+Observations:
+
+* Campaign donations start in early 2015 but really pick up in 2016. This coincides with primary season.
+* Evan McMullin's donations picked up in the [final month of the campaign](https://www.evanmcmullin.com/breaking_evan_mcmullin_in_historic_surge_in_new_utah_poll).
 
 # Bivariate Analysis
 
@@ -259,9 +305,6 @@ exceeded the individual limit. The same could be said for Ben Carson and Jeb Bus
 ### Did you observe any interesting relationships between the other features (not the main feature(s) of interest)?
 
 ### What was the strongest relationship you found?
-
-
-
 
 # Multivariate Plots Section
 
