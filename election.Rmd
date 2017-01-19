@@ -18,6 +18,7 @@ library(stringr)
 library(maps)
 library(mapdata)
 library(ggmap)
+library(zipcode)
 ```
 
 ```{r echo=FALSE, warning=FALSE, Load_the_Data}
@@ -159,29 +160,57 @@ length(unique(contributions$contbr_occupation))
 ## Contribution Locations
 
 ```{r echo=FALSE, Map_Zips}
+data(zipcode)
 usa <- map_data("usa")
-states <- map_data("states")
-zipcodes <- read.csv("zipcodes.csv")
-names(zipcodes) <- c("zip", "lat", "lon")
+states <- map_data("state")
 
 contributions.zipcodes <- unique(substr(contributions$contbr_zip, 1, 5))
-contributions.zipcodes <- as.numeric(contributions.zipcodes)
+contributions.zipcodes <- contributions.zipcodes
 
 contributions.zipcodes <- data.frame(zip = contributions.zipcodes, stringsAsFactors = FALSE)
 
-contributions.zipcodes <- inner_join(contributions.zipcodes, zipcodes)
+contributions.zipcodes <- inner_join(contributions.zipcodes, zipcode)
 
 ggplot() + 
   geom_polygon(data = usa, aes(x = long, y = lat, group = group), fill=NA, color="black") + 
   geom_polygon(data = states, aes(x = long, y = lat, fill = region, group = group)) + 
   coord_fixed(1.3) +
-  geom_point(data = contributions.zipcodes, aes(x = lon, y = lat)) +
+  geom_point(data = contributions.zipcodes, aes(x = longitude, y = latitude)) +
   guides(fill = FALSE)
 
 ```
 
-At first, I assumed that all the donations would be from California, but it turns out
-that donations came from various parts of the United States.
+As you can see, there are contributions from zipcodes that are outside of California.
+However, since all the state fields in the data set are recorded as California,
+I think these might be cases where the data was entered incorrectly. 
+
+Let's restrict our visualization to known California zipcodes:
+
+```{r echo=FALSE, Map_Zips_CA}
+ca_zips <- zipcode %>% filter(state == "CA")
+ca_df <- subset(states, region == "california")
+
+contributions.zipcodes <- unique(substr(contributions$contbr_zip, 1, 5))
+#contributions.zipcodes <- as.numeric(contributions.zipcodes)
+
+contributions.zipcodes <- data.frame(zip = contributions.zipcodes, stringsAsFactors = FALSE)
+
+contributions.zipcodes.ca <- inner_join(contributions.zipcodes, ca_zips)
+
+ggplot() + 
+  geom_polygon(data = ca_df, aes(x = long, y = lat, group = group), fill=NA, color="black") + 
+  #geom_polygon(data = states, aes(x = long, y = lat, fill = region, group = group)) + 
+  coord_fixed(1.3) +
+  geom_point(data = contributions.zipcodes.ca, aes(x = longitude, y = latitude), alpha = 1/10) +
+  guides(fill = FALSE)
+```
+
+It seems like most of the contributions are centered around the major cities in California:
+Los Angeles, San Francisco, San Diego, and Sacramento.
+
+```{r, results = "hide", echo = FALSE}
+dim(contributions.zipcodes)[1] - dim(contributions.zipcodes.ca)[1]
+```
 
 # Univariate Analysis
 
