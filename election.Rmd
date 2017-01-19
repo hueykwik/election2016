@@ -38,6 +38,11 @@ parties$party <- factor(parties$party,
                                    "Green", "Independent"),
                         ordered = TRUE)
 contributions <- contributions %>% left_join(parties, by = c("cand_nm" = "name"))
+
+# Just grab the 5-digit zipcode
+data(zipcode)
+contributions$zip <- substr(contributions$contbr_zip, 1, 5)
+contributions <- inner_join(contributions, zipcode)
 ```
 
 # Univariate Plots
@@ -60,19 +65,6 @@ summary(contributions$contb_receipt_amt)
 
 sprintf("Number of negative contributions: %d", dim(contributions[contributions$contb_receipt_amt < 0,])[1])
 
-#range(contributions$contb_receipt_amt, na.rm = TRUE)
-
-# View(contributions.gt2700 <- contributions %>% 
-#   filter(contb_receipt_amt > 2700))
-
-# ggplot(data=contributions.gt2700, aes(x = contb_receipt_amt)) + 
-#   geom_histogram() +
-#   scale_x_continuous(breaks=seq(2000, 12000, 2000))
-# 
-# ggplot(data=contributions, aes(x = contb_receipt_amt)) +
-#   geom_histogram() +
-#   coord_cartesian(xlim = c(0,10000))
-
 ggplot(data=contributions, aes(x = contb_receipt_amt)) + 
   geom_histogram(binwidth=200) + 
   coord_cartesian(xlim = c(0,10000)) + 
@@ -88,10 +80,6 @@ ggplot(data=contributions.gte2700, aes(x = contb_receipt_amt)) +
   scale_x_continuous(breaks=c(2700, 5400, 8100, 10800)) +
   scale_y_log10() +
   ylab("log(count")
-  
-
-#View(contributions[is.na(contributions$contb_receipt_dt),])
-#View(contributions[contributions$contb_receipt_amt < 0,])
 ```
 
 Observations:
@@ -164,10 +152,7 @@ data(zipcode)
 usa <- map_data("usa")
 states <- map_data("state")
 
-contributions.zipcodes <- unique(substr(contributions$contbr_zip, 1, 5))
-contributions.zipcodes <- contributions.zipcodes
-
-contributions.zipcodes <- data.frame(zip = contributions.zipcodes, stringsAsFactors = FALSE)
+contributions.zipcodes <- data.frame(zip = unique(contributions$zip), stringsAsFactors = FALSE)
 
 contributions.zipcodes <- inner_join(contributions.zipcodes, zipcode)
 
@@ -265,6 +250,8 @@ Zipcode, employers, occupation, and party might provide other angles into the da
 
 I created a Party variable to represent the political party for each canddiate. 
 
+Some zipcodes in the dataset had nine digits, so I created a separate feature for just the first five digits.
+
 ### Of the features you investigated, were there any unusual distributions? Did you perform any operations on the data to tidy, adjust, or change the form of the data? If so, why did you do this?
 
 When histogramming the contribution amounts, I used a log scale since one of the bins was really large. This made it easier to see the rest of the data.
@@ -357,6 +344,14 @@ Observations:
 
 * Campaign donations start in early 2015 but really pick up in 2016. This coincides with primary season.
 * Evan McMullin's donations picked up in the [final month of the campaign](https://www.evanmcmullin.com/breaking_evan_mcmullin_in_historic_surge_in_new_utah_poll).
+
+## Contributions by Party and Location
+```{r echo=FALSE, warning=FALSE, Party_Location}
+
+#contributions$zip <- substr(contributions$contbr_zip, 1, 5)
+#contributions <- inner_join(contributions, zipcode)
+```
+
 
 # Bivariate Analysis
 
