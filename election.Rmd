@@ -362,9 +362,6 @@ ggplot() +
   scale_color_manual(values = c("#3333FF", "#EE3523", "#FED105", "#17aa5c", "#DDDDDD"))
 
 #proc.time() - ptm
-
-#contributions$zip <- substr(contributions$contbr_zip, 1, 5)
-#contributions <- inner_join(contributions, zipcode)
 ```
 
 
@@ -393,7 +390,8 @@ contributions.city.party <- contributions.ca %>%
 
 ca_base <- ggplot() + 
   geom_polygon(data = ca_df, aes(x = long, y = lat, group = group), fill=NA, color="black") + 
-  coord_fixed(1.3) 
+  coord_fixed(1.3) +
+  scale_size(range = c(0, 6))
 
 # All five parties at once.
 ca_base +
@@ -416,18 +414,18 @@ ca_base +
   geom_point(data = contributions.city.party %>% filter(party == "Republican"), 
              aes(x = longitude, y = latitude, size = n), 
              color = party.colors[2],
-             alpha = 1/2)
+             alpha = 1/2) 
 
 # Number of contributions, facet by party.
 ca_base + 
   geom_point(data = contributions.city.party, aes(x = longitude, y = latitude, size = n, color=party), alpha = 1/2) +
-  scale_color_manual(values = c("#3333FF", "#EE3523", "#FED105", "#17aa5c", "#DDDDDD")) +
+  scale_color_manual(values = party.colors) +
   facet_wrap(~party)
 
 # Total of contributions, facet by party.
 ca_base + 
   geom_point(data = contributions.city.party, aes(x = longitude, y = latitude, size = total, color=party), alpha = 1/2) +
-  scale_color_manual(values = c("#3333FF", "#EE3523", "#FED105", "#17aa5c", "#DDDDDD")) +
+  scale_color_manual(values = party.colors) +
   facet_wrap(~party)
 ```
 
