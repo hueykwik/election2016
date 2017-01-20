@@ -250,7 +250,7 @@ Zipcode, employers, occupation, and party might provide other angles into the da
 
 I created a Party variable to represent the political party for each canddiate. 
 
-Some zipcodes in the dataset had nine digits, so I created a separate feature for just the first five digits.
+I also merged in data from the `zipcode` dataset: zip, city, state, latitude, and longitude.
 
 ### Of the features you investigated, were there any unusual distributions? Did you perform any operations on the data to tidy, adjust, or change the form of the data? If so, why did you do this?
 
@@ -348,6 +348,18 @@ Observations:
 ## Contributions by Party and Location
 ```{r echo=FALSE, warning=FALSE, Party_Location}
 
+contributions.ca <- contributions %>% filter(state == "CA")
+
+#ptm <- proc.time()
+
+ggplot() + 
+  geom_polygon(data = ca_df, aes(x = long, y = lat, group = group), fill=NA, color="black") + 
+  coord_fixed(1.3) +
+  geom_point(data = contributions.ca, aes(x = longitude, y = latitude, color = party)) +
+  scale_color_manual(values = c("#3333FF", "#EE3523", "#FED105", "#17aa5c", "#DDDDDD"))
+
+#proc.time() - ptm
+
 #contributions$zip <- substr(contributions$contbr_zip, 1, 5)
 #contributions <- inner_join(contributions, zipcode)
 ```
@@ -362,6 +374,43 @@ Observations:
 ### What was the strongest relationship you found?
 
 # Multivariate Plots Section
+
+## Number of contributions + Party + Location
+```{r}
+# Group by city to consolidate zipcodes.
+contributions.ca.city.party <- contributions.ca %>%
+  group_by(city, party) %>% 
+  summarise(
+    total = sum(contb_receipt_amt),
+    mean = mean(contb_receipt_amt),
+    median = median(contb_receipt_amt),
+    latitude = mean(latitude),
+    longitude = mean(longitude),
+    n = n())
+
+ggplot() + 
+  geom_polygon(data = ca_df, aes(x = long, y = lat, group = group), fill=NA, color="black") + 
+  coord_fixed(1.3) +
+  geom_point(data = contributions.ca.city.party, aes(x = longitude, y = latitude, color = party, size = n), alpha = 1/2) +
+  scale_color_manual(values = c("#3333FF", "#EE3523", "#FED105", "#17aa5c", "#DDDDDD"))
+
+ggplot() + 
+  geom_polygon(data = ca_df, aes(x = long, y = lat, group = group), fill=NA, color="black") + 
+  coord_fixed(1.3) +
+  geom_point(data = contributions.ca.city.party, aes(x = longitude, y = latitude, size = n, color=party), alpha = 1/2) +
+  scale_color_manual(values = c("#3333FF", "#EE3523", "#FED105", "#17aa5c", "#DDDDDD")) +
+  facet_wrap(~party)
+
+ggplot() + 
+  geom_polygon(data = ca_df, aes(x = long, y = lat, group = group), fill=NA, color="black") + 
+  coord_fixed(1.3) +
+  geom_point(data = contributions.ca.city.party, aes(x = longitude, y = latitude, size = total, color=party), alpha = 1/2) +
+  scale_color_manual(values = c("#3333FF", "#EE3523", "#FED105", "#17aa5c", "#DDDDDD")) +
+  facet_wrap(~party)
+```
+
+
+```
 
 
 ```{r echo=FALSE, Multivariate_Plots}
