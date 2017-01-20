@@ -43,6 +43,9 @@ contributions <- contributions %>% left_join(parties, by = c("cand_nm" = "name")
 data(zipcode)
 contributions$zip <- substr(contributions$contbr_zip, 1, 5)
 contributions <- inner_join(contributions, zipcode)
+
+# Colors for Democratic, Republican, Libertarian, Green, Independent
+party.colors = c("#3333FF", "#EE3523", "#FED105", "#17aa5c", "#DDDDDD")
 ```
 
 # Univariate Plots
@@ -378,7 +381,7 @@ ggplot() +
 ## Number of contributions + Party + Location
 ```{r}
 # Group by city to consolidate zipcodes.
-contributions.ca.city.party <- contributions.ca %>%
+contributions.city.party <- contributions.ca %>%
   group_by(city, party) %>% 
   summarise(
     total = sum(contb_receipt_amt),
@@ -388,53 +391,44 @@ contributions.ca.city.party <- contributions.ca %>%
     longitude = mean(longitude),
     n = n())
 
-ggplot() + 
+ca_base <- ggplot() + 
   geom_polygon(data = ca_df, aes(x = long, y = lat, group = group), fill=NA, color="black") + 
-  coord_fixed(1.3) +
-  geom_point(data = contributions.ca.city.party, aes(x = longitude, y = latitude, color = party, size = n), alpha = 1/2) +
+  coord_fixed(1.3) 
+
+# All five parties at once.
+ca_base +
+  geom_point(data = contributions.city.party, aes(x = longitude, y = latitude, color = party, size = n), alpha = 1/2) +
+  scale_color_manual(values = party.colors)
+
+ca_base + 
+  geom_point(data = contributions.city.party, aes(x = longitude, y = latitude, size = total, color = party), alpha = 1/2) +
   scale_color_manual(values = c("#3333FF", "#EE3523", "#FED105", "#17aa5c", "#DDDDDD"))
 
-ggplot() + 
-  geom_polygon(data = ca_df, aes(x = long, y = lat, group = group), fill=NA, color="black") + 
-  coord_fixed(1.3) +
-  geom_point(data = contributions.ca.city.party, aes(x = longitude, y = latitude, size = n, color=party), alpha = 1/2) +
+# Just Democratic.
+ca_base +
+  geom_point(data = contributions.city.party %>% filter(party == "Democratic"), 
+             aes(x = longitude, y = latitude, size = n), 
+             color = party.colors[1],
+             alpha = 1/2) 
+
+# Just Republican.
+ca_base + 
+  geom_point(data = contributions.city.party %>% filter(party == "Republican"), 
+             aes(x = longitude, y = latitude, size = n), 
+             color = party.colors[2],
+             alpha = 1/2)
+
+# Number of contributions, facet by party.
+ca_base + 
+  geom_point(data = contributions.city.party, aes(x = longitude, y = latitude, size = n, color=party), alpha = 1/2) +
   scale_color_manual(values = c("#3333FF", "#EE3523", "#FED105", "#17aa5c", "#DDDDDD")) +
   facet_wrap(~party)
 
-ggplot() + 
-  geom_polygon(data = ca_df, aes(x = long, y = lat, group = group), fill=NA, color="black") + 
-  coord_fixed(1.3) +
-  geom_point(data = contributions.ca.city.party, aes(x = longitude, y = latitude, size = total, color=party), alpha = 1/2) +
+# Total of contributions, facet by party.
+ca_base + 
+  geom_point(data = contributions.city.party, aes(x = longitude, y = latitude, size = total, color=party), alpha = 1/2) +
   scale_color_manual(values = c("#3333FF", "#EE3523", "#FED105", "#17aa5c", "#DDDDDD")) +
   facet_wrap(~party)
-```
-
-
-```
-
-
-```{r echo=FALSE, Multivariate_Plots}
-# Goal: plot a map of campaign contributions, size of point is size of contribution, color is party
-
-# View(zipcodes)
-# tail(zipcodes)
-# usa <- map_data()
-# ggplot() +
-#   geom_polygon(data = usa, aes(x = long, y = lat, group = group), fill = NA, color = "red") +
-#   coord_fixed(1.3) + 
-#   geom_point(data = tail(zipcodes), aes(x = lon, y = lat))
-# 
-# sbbox <- make_bbox(lon = zipcodes$lon, lat = zipcodes$lat, f = .1)
-# 
-# ll_means <- sapply(zipcodes[2:3], mean)
-# ll_means
-# 
-# sq_map <- get_map(location = sbbox, maptype = "toner", source = "stamen")
-# ggmap(sq_map) + geom_point(data = zipcodes, mapping = aes(x = lon, y = lat), color = "red")
-# 
-# sq_map <- get_map(location = sbbox, maptype = "satellite", source = "google")
-# ggmap(sq_map) + geom_point(data = zipcodes, mapping = aes(x = lon, y = lat), color = "red", zoom = 1)
-
 ```
 
 # Multivariate Analysis
