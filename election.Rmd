@@ -57,7 +57,16 @@ MergeSelfEmployed <- function(x) {
   x
 }
 
+MergeInfoRequested <- function(x) {
+  if (x %in% c("INFORMATION REQUESTED PER BEST EFFORTS", "INFORMATION REQUESTED")) {
+    return("INFO REQUESTED")
+  }
+  x
+}
+
 contributions$contbr_employer <- sapply(contributions$contbr_employer, MergeSelfEmployed)
+contributions$contbr_employer <- sapply(contributions$contbr_employer, MergeInfoRequested)
+contributions$contbr_occupation <- sapply(contributions$contbr_occupation, MergeInfoRequested)
 ```
 
 
@@ -175,7 +184,7 @@ contributions.zipcodes <- inner_join(contributions.zipcodes, zipcode)
 
 ggplot() + 
   geom_polygon(data = usa, aes(x = long, y = lat, group = group), fill=NA, color="black") + 
-  geom_polygon(data = states, aes(x = long, y = lat, fill = region, group = group)) + 
+  geom_polygon(data = states, aes(x = long, y = lat, group = group), fill=NA) + 
   coord_fixed(1.3) +
   geom_point(data = contributions.zipcodes, aes(x = longitude, y = latitude)) +
   guides(fill = FALSE)
@@ -187,7 +196,6 @@ As you can see, there are contributions from outside of California.
 ```{r echo=FALSE, warning = FALSE, Non_CA_Zips}
 contributions %>% filter(state != "CA") %>% select(state, zip, city, contbr_city, contbr_st)
 ```
-
 
 Let's restrict our visualization to known California zipcodes:
 
@@ -231,8 +239,7 @@ MakeTopNDataFrame <- function(df, column, n = 10) {
   new_df <- new_df %>% mutate(pct = n / sum(n))
   
   new_df[[column]] <- ReverseLevels(new_df, column)
-  #occupation.d$contbr_occupation <- ReverseLevels(occupation.d, "contbr_occupation")
-  
+
   new_df
 }
 
@@ -466,10 +473,8 @@ domination by Democrats.
 ```{r echo=FALSE, warning=FALSE, Party_Occupation}
 
 occupation.d <- MakeTopNDataFrame(contributions %>% filter(party == "Democratic"), "contbr_occupation")
-#occupation.d$contbr_occupation <- ReverseLevels(occupation.d, "contbr_occupation")
 
 occupation.r <- MakeTopNDataFrame(contributions %>% filter(party == "Republican"), "contbr_occupation")
-#occupation.r$contbr_occupation <- ReverseLevels(occupation.r, "contbr_occupation")
 
 p.dem <- ggplot(data = occupation.d, aes(x = contbr_occupation, y = pct)) + 
   geom_bar(stat = "identity") +
@@ -481,6 +486,30 @@ p.rep <- ggplot(data = occupation.r, aes(x = contbr_occupation, y = pct)) +
 
 grid.arrange(p.dem, p.rep)
 ```
+
+The top chart shows the top ten occupations for Democrats. The bottom chart shows
+the top ten occupations for Republicans.
+
+Appears on both top ten lists: 
+
+* Retired, the top occupation type for both.
+* Attorney
+* Teacher
+* Info Requested
+* Engineer
+* Physician
+
+Just Democrats:
+
+* Software Engineer
+* Professor
+* Consultant
+
+Just Republicans:
+
+* Homemaker
+* Sales
+* Self-Employed
 
 ## Candidate vs. Occupation
 ```{r echo = FALSE, warning=FALSE, Candidate_Occupation}
@@ -506,8 +535,14 @@ p.cruz <- ggplot(data = occupation.cruz, aes(x = contbr_occupation, y = pct)) +
   coord_flip()
 
 
-grid.arrange(p.sanders, p.clinton, p.trump, p.cruz)
+grid.arrange(p.clinton, p.sanders, p.trump, p.cruz)
 ```
+
+Here I looked at the top four candidates in the primaries: Clinton, Sanders, Trump, and Cruz. The charts appear in that order from left-to-right. 
+
+Each chart shows the top 10 occupations.
+
+One thing that stood out to me is the percentage of donations that came from retirees. For Clinton, Trump, and Cruz, retirees make up more than 60% of donations. For Sanders, this is less than 10%. Instead, 60% of his donors are listed as "Not Employed."
 
 Over 60% of donations to Bernie Sanders were from people whose occupation was "Not Employed".
 
