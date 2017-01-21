@@ -19,6 +19,7 @@ library(maps)
 library(mapdata)
 library(ggmap)
 library(zipcode)
+library(gridExtra)
 ```
 
 ```{r echo=FALSE, warning=FALSE, Load_the_Data}
@@ -43,6 +44,8 @@ contributions <- contributions %>% left_join(parties, by = c("cand_nm" = "name")
 data(zipcode)
 contributions$zip <- substr(contributions$contbr_zip, 1, 5)
 contributions <- inner_join(contributions, zipcode)
+
+votes <- read.csv('votes.csv')
 
 # Colors for Democratic, Republican, Libertarian, Green, Independent
 party.colors = c("#3333FF", "#EE3523", "#FED105", "#17aa5c", "#DDDDDD")
@@ -200,6 +203,39 @@ Los Angeles, San Francisco, San Diego, and Sacramento.
 dim(contributions.zipcodes)[1] - dim(contributions.zipcodes.ca)[1]
 ```
 
+# Occupations, Employers
+```{r, echo = FALSE, warning = FALSE}
+ReverseLevels <- function(df, col) {
+  factor(df[[col]], levels = rev(df[[col]]), ordered = TRUE)
+}
+
+MakeTopNDataFrame <- function(df, column, n = 10) {
+  top_n <- head(sort(table(df[[column]]), decreasing = TRUE), 10)
+  new_df <- as.data.frame(top_n)
+  names(new_df) <- c(column, "n")
+  
+  new_df <- new_df %>% mutate(pct = n / sum(n))
+  
+  new_df[[column]] <- ReverseLevels(new_df, column)
+  #occupation.d$contbr_occupation <- ReverseLevels(occupation.d, "contbr_occupation")
+  
+  new_df
+}
+
+top10_occupations <- MakeTopNDataFrame(contributions, "contbr_occupation") 
+top10_employers <- MakeTopNDataFrame(contributions, "contbr_employer") 
+
+ggplot(data = top10_occupations, aes(x = contbr_occupation, y = pct)) +
+  geom_bar(stat = "identity") +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))
+
+ggplot(data = top10_employers, aes(x = contbr_employer, y = pct)) +
+  geom_bar(stat = "identity") +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))
+```
+
+Above, we look at hte top 10 occupations and employers in our dataset.
+
 # Univariate Analysis
 
 ### What is the structure of your dataset?
@@ -230,6 +266,7 @@ The features are as follows:
 Factors: Candidate name, election type (Primary 2016, General 2016, or Primary 2020)
 
 Other observations:
+
 * Date range: April 1, 2015 to October 31, 2016
 * There are 60587 unique employers.
 * There are 136234 unique zipcodes.
@@ -270,9 +307,12 @@ contributions.candidates <- contributions %>%
             mean = mean(contb_receipt_amt, na.rm = TRUE),
             median = median(as.numeric(contb_receipt_amt), na.rm = TRUE),
             n = n(),
-            party = first(party)) %>%
+            party = first(party),
+            first_donation_date = min(contb_receipt_dt),
+            last_donation_date = max(contb_receipt_dt)) %>%
   arrange(-n) %>%
-  mutate(cand_last_name = factor(cand_last_name, cand_last_name)) 
+  mutate(cand_last_name = factor(cand_last_name, cand_last_name),
+         duration = last_donation_date - first_donation_date) 
 
 cand.order = levels(contributions.candidates$cand_last_name)
 
@@ -322,9 +362,6 @@ It is interesting that Clinton and Sanders average donation amounts are roughly 
 Clinton's median donation is actually lower, i.e. $27 vs. $25. Of course, this data
 does not include donations to Political Action Committees, so that could be a factor.
 
-It does seem that having a lower average donation, be it median or mean, seems to reflect
-having more mass appeal. For instance, Chris Christie has 
-
 For the box plots, I sorted the candidates from highest number of donations to lowest. 
 
 In the first box plot, we can see that some candidates actually have many donations
@@ -337,6 +374,16 @@ In the second box plot, I excluded negative contributions to see if we could see
 ```{r echo=FALSE, warning=FALSE, Campaign_Duration}
 ggplot(data = contributions, aes(x = contb_receipt_dt)) + geom_histogram()
 
+ggplot(data = subset(contributions, contributions$party == "Republican"), aes(x = contb_receipt_dt)) +
+  geom_histogram(bins = 100) +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
+  facet_wrap(~cand_last_name)
+
+ggplot(data = subset(contributions, contributions$party == "Democratic"), aes(x = contb_receipt_dt)) +
+  geom_histogram(bins = 100) +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
+  facet_wrap(~cand_last_name)
+
 ggplot(data = contributions, aes(x = contb_receipt_dt)) +
   geom_histogram(bins = 100) +
   theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
@@ -345,29 +392,117 @@ ggplot(data = contributions, aes(x = contb_receipt_dt)) +
 
 Observations:
 
-* Campaign donations start in early 2015 but really pick up in 2016. This coincides with primary season.
+* Campaign donations start in early 2015 but really pick up in 2016, which coincides with primary season.
+* The Republican field was crowded. Trump had a huge spike in donations in the middle of 2016, perhaps when
+it was clear he was going to win the nomination.
+* Sanders vs. Clinton is interesting to look at. It looks like Sanders actually gets more donations during
+mcuh of the primary season. The decline in donations also corresponds to roughly when it becomes apparent
+that Sanders will lose the nomination.
 * Evan McMullin's donations picked up in the [final month of the campaign](https://www.evanmcmullin.com/breaking_evan_mcmullin_in_historic_surge_in_new_utah_poll).
+
+## Donation vs. Duration of Campaign
+```{r echo=FALSE}
+ggplot(data = contributions.candidates, aes(x = last_donation_date, 
+                                            y = n)) +
+  geom_point() + scale_y_log10() + geom_smooth(method='lm')
+```
+
+Last donation date could be a proxy variable for how long a campaign lasts.
+As we can see, this is positively correlated with the total number of donations.
+
+```{r}
+ggplot(data = contributions.candidates, aes(x = total, y = n)) +
+  geom_point() +
+  scale_x_log10() +
+  scale_y_log10()
+
+primaries <- inner_join(contributions.candidates, votes, by = c("cand_last_name" = "last_name"))
+
+ggplot(data = primaries, aes(x = n, y = delegates)) + 
+  geom_point() +
+  scale_x_log10() + 
+  facet_wrap(~party)
+
+ggplot(data = primaries, aes(x = n, y = votes)) + 
+  geom_point() +
+  scale_x_log10() + 
+  scale_y_log10() +
+  facet_wrap(~party)
+```
+
+There seems to be a positive correlation between the log number of votes and the log number of donations.
 
 ## Contributions by Party and Location
 ```{r echo=FALSE, warning=FALSE, Party_Location}
 
 contributions.ca <- contributions %>% filter(state == "CA")
 
-#ptm <- proc.time()
-
 ggplot() + 
   geom_polygon(data = ca_df, aes(x = long, y = lat, group = group), fill=NA, color="black") + 
   coord_fixed(1.3) +
-  geom_point(data = contributions.ca, aes(x = longitude, y = latitude, color = party)) +
-  scale_color_manual(values = c("#3333FF", "#EE3523", "#FED105", "#17aa5c", "#DDDDDD"))
-
-#proc.time() - ptm
+  geom_point(data = contributions.ca, aes(x = longitude, y = latitude, color = party), alpha = 1/10) +
+  scale_color_manual(values = party.colors)
 ```
 
+This visualization again shows concentration of donation activity around cities, but also shows more
+domination by Democrats.
+
+## Party vs. Occupation 
+```{r echo=FALSE, warning=FALSE, Party_Occupation}
+
+occupation.d <- MakeTopNDataFrame(contributions %>% filter(party == "Democratic"), "contbr_occupation")
+#occupation.d$contbr_occupation <- ReverseLevels(occupation.d, "contbr_occupation")
+
+occupation.r <- MakeTopNDataFrame(contributions %>% filter(party == "Republican"), "contbr_occupation")
+#occupation.r$contbr_occupation <- ReverseLevels(occupation.r, "contbr_occupation")
+
+p.dem <- ggplot(data = occupation.d, aes(x = contbr_occupation, y = pct)) + 
+  geom_bar(stat = "identity") +
+  coord_flip()
+
+p.rep <- ggplot(data = occupation.r, aes(x = contbr_occupation, y = pct)) + 
+  geom_bar(stat = "identity") + 
+  coord_flip()
+
+grid.arrange(p.dem, p.rep)
+```
+
+## Candidate vs. Occupation
+```{r echo = FALSE, warning=FALSE, Candidate_Occupation}
+occupation.sanders <- MakeTopNDataFrame(contributions %>% filter(cand_last_name == "Sanders"), "contbr_occupation")
+occupation.clinton <- MakeTopNDataFrame(contributions %>% filter(cand_last_name == "Clinton"), "contbr_occupation")
+occupation.trump <- MakeTopNDataFrame(contributions %>% filter(cand_last_name == "Trump"), "contbr_occupation")
+occupation.cruz <- MakeTopNDataFrame(contributions %>% filter(cand_last_name == "Cruz"), "contbr_occupation")
+
+p.sanders <- ggplot(data = occupation.sanders, aes(x = contbr_occupation, y = pct)) + 
+  geom_bar(stat = "identity") +
+  coord_flip()
+
+p.clinton <- ggplot(data = occupation.clinton, aes(x = contbr_occupation, y = pct)) + 
+  geom_bar(stat = "identity") +
+  coord_flip()
+
+p.trump <- ggplot(data = occupation.trump, aes(x = contbr_occupation, y = pct)) + 
+  geom_bar(stat = "identity") +
+  coord_flip()
+
+p.cruz <- ggplot(data = occupation.cruz, aes(x = contbr_occupation, y = pct)) + 
+  geom_bar(stat = "identity") +
+  coord_flip()
+
+
+grid.arrange(p.sanders, p.clinton, p.trump, p.cruz)
+```
+
+Over 60% of donations to Bernie Sanders were from people whose occupation was "Not Employed".
 
 # Bivariate Analysis
 
 ### Talk about some of the relationships you observed in this part of the investigation. How did the feature(s) of interest vary with other features in the dataset?
+
+Number of contributions and total contributions are positively correlated. 
+
+Both of these features are positively correlated with number of votes and number of delegates in the primary election.
 
 ### Did you observe any interesting relationships between the other features (not the main feature(s) of interest)?
 
@@ -429,13 +564,38 @@ ca_base +
   facet_wrap(~party)
 ```
 
+# Where are Clinton's Supporters? Bernie's Supporters?
+
+```{r}
+contributions.city.cand <- contributions.ca %>%
+  filter(election_tp == "P2016") %>%
+  group_by(city, cand_last_name) %>% 
+  summarise(
+    total = sum(contb_receipt_amt),
+    mean = mean(contb_receipt_amt),
+    median = median(contb_receipt_amt),
+    latitude = mean(latitude),
+    longitude = mean(longitude),
+    n = n())
+
+dems = c("Clinton", "Sanders")
+ca_base + 
+  geom_point(data = contributions.city.cand %>% filter(cand_last_name %in% dems), aes(x = longitude, y = latitude, size = total, color = cand_last_name))
+
+ca_base + 
+  geom_point(data = contributions.city.cand %>% filter(cand_last_name %in% dems), aes(x = longitude, y = latitude, size = total, color = cand_last_name)) +
+  facet_wrap(~cand_last_name)
+```
+
 # Multivariate Analysis
 
 ### Talk about some of the relationships you observed in this part of the investigation. Were there features that strengthened each other in terms of looking at your feature(s) of interest?
 
+The Democratic and Republican parties receive donations from similar areas, with the Democrats receiving more donations from more largely populated areas.
+
 ### Were there any interesting or surprising interactions between features?
 
-### OPTIONAL: Did you create any models with your dataset? Discuss the strengths and limitations of your model.
+I expected to see some difference between Clinton and Sanders support geographically.
 
 ------
 
