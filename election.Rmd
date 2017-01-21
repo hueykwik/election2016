@@ -49,18 +49,13 @@ votes <- read.csv('votes.csv')
 
 # Colors for Democratic, Republican, Libertarian, Green, Independent
 party.colors = c("#3333FF", "#EE3523", "#FED105", "#17aa5c", "#DDDDDD")
-```
 
-```{r echo=FALSE, Merge_Self_Employed}
 MergeSelfEmployed <- function(x) {
   if (x %in% c("SELF EMPLOYED", "SELF")) {
     return("SELF-EMPLOYED")
   }
   x
 }
-
-small <- head(contributions, 110)
-sapply(small$contbr_employer, MergeSelfEmployed)
 
 contributions$contbr_employer <- sapply(contributions$contbr_employer, MergeSelfEmployed)
 ```
@@ -187,9 +182,7 @@ ggplot() +
 
 ```
 
-As you can see, there are contributions from zipcodes that are outside of California.
-However, since all the state fields in the data set are recorded as California,
-I think these might be cases where the data was entered incorrectly. 
+As you can see, there are contributions from outside of California.
 
 ```{r echo=FALSE, warning = FALSE, Non_CA_Zips}
 contributions %>% filter(state != "CA") %>% select(state, zip, city, contbr_city, contbr_st)
@@ -255,7 +248,9 @@ ggplot(data = top10_employers, aes(x = contbr_employer, y = pct)) +
   theme(axis.text.x = element_text(angle = 90, hjust = 1))
 ```
 
-Above, we look at hte top 10 occupations and employers in our dataset.
+Above, we look at the top 10 occupations and employers in our dataset.
+
+As we can see, retirees make up a large chunk of our dataset, as do the self-employed.
 
 # Univariate Analysis
 
@@ -266,14 +261,9 @@ There are 1,073,271 records in the dataset with 18 features.
 The features are as follows:
 
 * committee id
-* candidate id
-* candidate name
-* contributor name
-* contributor's city
-* contributor state
-* contributor zipcode
-* contributor's employer
-* contributor's occupation
+* candidate id, name
+* contributor name, city, state, zipcode
+* contributor's employer, occupation
 * contribution amount
 * contribution date
 * receipt description
@@ -301,7 +291,7 @@ general election contributions to Lindsey Graham.
 
 I'm mostly interested in looking at patterns/differences in contributions among
 different candidates. So for me, the main features of interest are candidate name,
-contribution amount, and date.
+contribution amount, date, and location.
 
 ### What other features in the dataset do you think will help support your investigation into your feature(s) of interest?
 
@@ -309,9 +299,13 @@ Zipcode, employers, occupation, and party might provide other angles into the da
 
 ### Did you create any new variables from existing variables in the dataset?
 
-I created a Party variable to represent the political party for each canddiate. 
+I created a variable to represent each candidate's political party.
 
-I also merged in data from the `zipcode` dataset: zip, city, state, latitude, and longitude.
+In order to get geospatial information, I merged in data from the `zipcode` dataset, using the 
+`contbr_zipcode` as the key. This merged in latitude and longitude information.
+
+Finally, I was curious how donations correlated with votes, so I added in the primary vote totals
+and delegates, which I found on Wikipedia.
 
 ### Of the features you investigated, were there any unusual distributions? Did you perform any operations on the data to tidy, adjust, or change the form of the data? If so, why did you do this?
 
