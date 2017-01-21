@@ -22,7 +22,7 @@ library(zipcode)
 library(gridExtra)
 ```
 
-```{r echo=FALSE, warning=FALSE, Load_the_Data}
+```{r echo=FALSE, results="hide", warning=FALSE, Load_the_Data}
 # Load the Data
 # Warnings come from extra comma and end of each row, safe to ignore.
 contributions <- read_csv("ca.csv")   
@@ -51,6 +51,21 @@ votes <- read.csv('votes.csv')
 party.colors = c("#3333FF", "#EE3523", "#FED105", "#17aa5c", "#DDDDDD")
 ```
 
+```{r echo=FALSE, Merge_Self_Employed}
+MergeSelfEmployed <- function(x) {
+  if (x %in% c("SELF EMPLOYED", "SELF")) {
+    return("SELF-EMPLOYED")
+  }
+  x
+}
+
+small <- head(contributions, 110)
+sapply(small$contbr_employer, MergeSelfEmployed)
+
+contributions$contbr_employer <- sapply(contributions$contbr_employer, MergeSelfEmployed)
+```
+
+
 # Univariate Plots
 
 ```{r echo=FALSE, Univariate_Plots}
@@ -77,6 +92,7 @@ ggplot(data=contributions, aes(x = contb_receipt_amt)) +
   scale_y_log10() + 
   ylab("log(count)")
 
+# Contributions that are greater than 2700
 contributions.gte2700 <- contributions %>%
   filter(contb_receipt_amt >= 2700) %>%
   select(cand_nm, contbr_nm, contb_receipt_amt, receipt_desc, memo_text)
@@ -153,7 +169,7 @@ length(unique(contributions$contbr_occupation))
 
 ## Contribution Locations
 
-```{r echo=FALSE, Map_Zips}
+```{r echo=FALSE, warning = FALSE, Map_Zips}
 data(zipcode)
 usa <- map_data("usa")
 states <- map_data("state")
@@ -174,6 +190,11 @@ ggplot() +
 As you can see, there are contributions from zipcodes that are outside of California.
 However, since all the state fields in the data set are recorded as California,
 I think these might be cases where the data was entered incorrectly. 
+
+```{r echo=FALSE, warning = FALSE, Non_CA_Zips}
+contributions %>% filter(state != "CA") %>% select(state, zip, city, contbr_city, contbr_st)
+```
+
 
 Let's restrict our visualization to known California zipcodes:
 
@@ -514,7 +535,7 @@ Both of these features are positively correlated with number of votes and number
 ```{r}
 # Group by city to consolidate zipcodes.
 contributions.city.party <- contributions.ca %>%
-  group_by(city, party) %>% 
+  group_by(city, party) %>%
   summarise(
     total = sum(contb_receipt_amt),
     mean = mean(contb_receipt_amt),
@@ -586,6 +607,65 @@ ca_base +
   geom_point(data = contributions.city.cand %>% filter(cand_last_name %in% dems), aes(x = longitude, y = latitude, size = total, color = cand_last_name)) +
   facet_wrap(~cand_last_name)
 ```
+
+```{r, echo = FALSE, Bay_Area_Party}
+contributions.zip.party <- contributions.ca %>%
+  group_by(zip, party) %>% 
+  summarise(
+    total = sum(contb_receipt_amt),
+    mean = mean(contb_receipt_amt),
+    median = median(contb_receipt_amt),
+    latitude = mean(latitude),
+    longitude = mean(longitude),
+    n = n())
+
+ca_base +
+  geom_point(data = contributions.zip.party, aes(x = longitude, y = latitude, color = party, size = n), alpha = 1/2) +
+  scale_color_manual(values = party.colors) + coord_fixed(xlim = c(-123.5, -121.2), ylim = c(35.8, 38.8), ratio = 1.3) 
+
+p1 <- ca_base +
+  geom_point(data = contributions.zip.party %>% filter(party == "Republican"), aes(x = longitude, y = latitude, color = party, size = n), alpha = 1/2) +
+  scale_color_manual(values = party.colors) + coord_fixed(xlim = c(-123.5, -121.2), ylim = c(35.8, 38.8), ratio = 1.3) 
+
+p2 <- ca_base +
+  geom_point(data = contributions.zip.party %>% filter(party == "Democratic"), aes(x = longitude, y = latitude, color = party, size = n), alpha = 1/2) +
+  scale_color_manual(values = party.colors) + coord_fixed(xlim = c(-123.5, -121.2), ylim = c(35.8, 38.8), ratio = 1.3) 
+
+grid.arrange(p1, p2, ncol = 2)
+```
+
+Decided to zoom in on the Bay Area, and it looks like Democrats get a lot of their donations from urban cities than Republicans do.
+
+```{r, echo = FALSE, Sanders_Clinton_Bay}
+contributions.sf.cand <- contributions.ca %>%
+  filter(election_tp == "P2016") %>%
+  group_by(zip, cand_last_name) %>% 
+  summarise(
+    total = sum(contb_receipt_amt),
+    mean = mean(contb_receipt_amt),
+    median = median(contb_receipt_amt),
+    latitude = mean(latitude),
+    longitude = mean(longitude),
+    n = n())
+
+p1 <- ca_base + 
+  geom_point(data = contributions.sf.cand %>% filter(cand_last_name == "Sanders"), 
+             aes(x = longitude, y = latitude, size = n), 
+             color = party.colors[1],
+             alpha = 1/2) +
+  coord_fixed(xlim = c(-123.5, -121.2), ylim = c(35.8, 38.8), ratio = 1.3)  
+
+p2 <- ca_base + 
+  geom_point(data = contributions.sf.cand %>% filter(cand_last_name == "Clinton"), 
+             aes(x = longitude, y = latitude, size = n), 
+             color = party.colors[1],
+             alpha = 1/2) +
+  coord_fixed(xlim = c(-123.5, -121.2), ylim = c(35.8, 38.8), ratio = 1.3)  
+
+grid.arrange(p1, p2, ncol = 2)
+```
+
+Sanders and Clinton have very similar areas of support within the San Francisco Bay Area.
 
 # Multivariate Analysis
 
