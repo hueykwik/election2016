@@ -422,7 +422,7 @@ mcuh of the primary season. The decline in donations also corresponds to roughly
 that Sanders will lose the nomination.
 * Evan McMullin's donations picked up in the [final month of the campaign](https://www.evanmcmullin.com/breaking_evan_mcmullin_in_historic_surge_in_new_utah_poll).
 
-## Donation vs. Duration of Campaign
+## Donation vs. Last Donation Date
 ```{r echo=FALSE}
 ggplot(data = contributions.candidates, aes(x = last_donation_date, 
                                             y = n)) +
@@ -432,7 +432,11 @@ ggplot(data = contributions.candidates, aes(x = last_donation_date,
 Last donation date could be a proxy variable for how long a campaign lasts.
 As we can see, this is positively correlated with the total number of donations.
 
-```{r}
+Because campaigns can still receive donations after the campaign has been "suspended",
+last donation date by itself isn't a good indicator of when a campaign ends. For that,
+it's better to look at a histogram of dates.
+
+```{r echo=FALSE}
 ggplot(data = contributions.candidates, aes(x = total, y = n)) +
   geom_point() +
   scale_x_log10() +
@@ -452,7 +456,7 @@ ggplot(data = primaries, aes(x = n, y = votes)) +
   facet_wrap(~party)
 ```
 
-There seems to be a positive correlation between the log number of votes and the log number of donations.
+Here we look at a scatter log-log plot of total amount raised vs number of donations. It's clear that there is a positive correlation here. This makes sense intuitively, especially when you consider that individual campaign contributions are capped at $2,700. This requires many small donations in order to raise a lot of money.
 
 ## Contributions by Party and Location
 ```{r echo=FALSE, warning=FALSE, Party_Location}
@@ -542,9 +546,7 @@ Here I looked at the top four candidates in the primaries: Clinton, Sanders, Tru
 
 Each chart shows the top 10 occupations.
 
-One thing that stood out to me is the percentage of donations that came from retirees. For Clinton, Trump, and Cruz, retirees make up more than 60% of donations. For Sanders, this is less than 10%. Instead, 60% of his donors are listed as "Not Employed."
-
-Over 60% of donations to Bernie Sanders were from people whose occupation was "Not Employed".
+One thing that stood out to me is the percentage of donations that came from retirees. For Clinton, Trump, and Cruz, retirees make up more than 60% of donations. For Sanders, this is less than 10%. Instead, 60% of his donors are listed as "Not Employed." 
 
 # Bivariate Analysis
 
