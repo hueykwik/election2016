@@ -436,6 +436,7 @@ Because campaigns can still receive donations after the campaign has been "suspe
 last donation date by itself isn't a good indicator of when a campaign ends. For that,
 it's better to look at a histogram of dates.
 
+## Total Amount vs. Number of Donations
 ```{r echo=FALSE}
 ggplot(data = contributions.candidates, aes(x = total, y = n)) +
   geom_point() +
@@ -443,12 +444,24 @@ ggplot(data = contributions.candidates, aes(x = total, y = n)) +
   scale_y_log10()
 
 primaries <- inner_join(contributions.candidates, votes, by = c("cand_last_name" = "last_name"))
+```
 
+Here we look at a scatter log-log plot of total amount raised vs number of donations. It's clear that there is a positive correlation here. This makes sense intuitively, especially when you consider that individual campaign contributions are capped at $2,700. This requires many small donations in order to raise a lot of money.
+
+## Delegate Count vs. Number of Donations
+```{r}
 ggplot(data = primaries, aes(x = n, y = delegates)) + 
   geom_point() +
   scale_x_log10() + 
   facet_wrap(~party)
+```
 
+Only a few candidates will actually receive any delegates, so it's hard to make
+claims about the relationship between number of donations and delegate count. Perhaps
+it's exponential.
+
+## Votes vs. Number of Donations
+```{r}
 ggplot(data = primaries, aes(x = n, y = votes)) + 
   geom_point() +
   scale_x_log10() + 
@@ -456,7 +469,7 @@ ggplot(data = primaries, aes(x = n, y = votes)) +
   facet_wrap(~party)
 ```
 
-Here we look at a scatter log-log plot of total amount raised vs number of donations. It's clear that there is a positive correlation here. This makes sense intuitively, especially when you consider that individual campaign contributions are capped at $2,700. This requires many small donations in order to raise a lot of money.
+This is on a log-log scale. There seems to be a positive correlation here. 
 
 ## Contributions by Party and Location
 ```{r echo=FALSE, warning=FALSE, Party_Location}
