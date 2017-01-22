@@ -804,7 +804,7 @@ We can see that Sanders peak around late March and early April of 2016, where he
 
 Donations decline as June 7th approaches, when Clinton clinches the nomination. 
 
-The Democratic National Conventoin was from July 25th to July 28th in 2016, where we see Clinton's donation types switch from
+The Democratic National Convention was from July 25th to July 28th in 2016, where we see Clinton's donation types switch from
 Primary to General.
 
 ### Plot Three
@@ -836,6 +836,8 @@ Retirees make up the bulk of donations for each candidate except for Sanders, wh
 
 This data set contains information on more than 1 million donations to the 2016 Presidential election campaigns in California. I started by understanding the individual variables in the data set, and then I explored interesting questions and leads as I continued to make observations on plots. 
 
-Visualizations of the data helped me spot interesting problems in the data to fix. For instance, I needed to merge variants of the phrase "Self Employed" (like "Self-Employed" or "Self").
+Visualizations of the data helped me spot problems in the data to fix. For instance, I needed to merge variants of the phrase "Self Employed" (like "Self-Employed" or "Self").
 
 Given that California is a solid Democratic supporting state, it was hard to tease out big differences between Republican and Democratic donations. I chose California because of my familiarity with the state, but looking at a swing state like Ohio or Pennsylvania may yield more interesting results.
+
+Finally, I wish there were more information about each of the donors so I could do more analysis. It's interesting that Sanders has a large number of unemployed supporters, but the current dataset does not give provide much information about them. For instance, I would like to understand the distribution of ages in this group (e.g. are they students?) The dataset as is doesn't make it easy to dig into these sorts of questions.
