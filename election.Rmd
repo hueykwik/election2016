@@ -528,6 +528,25 @@ Just Republicans:
 * Sales
 * Self-Employed
 
+## Party vs. Employer
+```{r echo = FALSE}
+occupation.d <- MakeTopNDataFrame(contributions %>% filter(party == "Democratic"), "contbr_employer")
+
+occupation.r <- MakeTopNDataFrame(contributions %>% filter(party == "Republican"), "contbr_employer")
+
+p.dem <- ggplot(data = occupation.d, aes(x = contbr_employer, y = pct)) + 
+  geom_bar(stat = "identity") +
+  coord_flip()
+
+p.rep <- ggplot(data = occupation.r, aes(x = contbr_employer, y = pct)) + 
+  geom_bar(stat = "identity") + 
+  coord_flip()
+
+grid.arrange(p.dem, p.rep)
+```
+
+Nothing interesting when comparing party vs. employer.
+
 ## Candidate vs. Occupation
 ```{r echo = FALSE, warning=FALSE, Candidate_Occupation}
 occupation.sanders <- MakeTopNDataFrame(contributions %>% filter(cand_last_name == "Sanders"), "contbr_occupation")
@@ -573,13 +592,17 @@ Both of these features are positively correlated with number of votes and number
 
 ### What was the strongest relationship you found?
 
+Tracking the donations through time can give us a sense of the story of the campaign.
+
+For Democrats, the number of donations seems to roughly track what is going on in the campaign. Sanders gains a lot of interest throughout the campaign, peaks, and then declines as it becomes clearer he will not win the nomination. Clinton's donations rise after the convention and throughout
+
 # Multivariate Plots Section
 
-## Number of contributions + Party + Location
-```{r}
+## Map View Donations
+```{r echo = FALSE, Contribution_Party_Map}
 # Group by city to consolidate zipcodes.
-contributions.city.party <- contributions.ca %>%
-  group_by(city, party) %>%
+contributions.zip.party <- contributions.ca %>%
+  group_by(zip, party) %>% 
   summarise(
     total = sum(contb_receipt_amt),
     mean = mean(contb_receipt_amt),
@@ -595,46 +618,59 @@ ca_base <- ggplot() +
 
 # All five parties at once.
 ca_base +
-  geom_point(data = contributions.city.party, aes(x = longitude, y = latitude, color = party, size = n), alpha = 1/2) +
+  geom_point(data = contributions.zip.party, aes(x = longitude, y = latitude, color = party, size = n), alpha = 1/2) +
   scale_color_manual(values = party.colors)
 
 ca_base + 
-  geom_point(data = contributions.city.party, aes(x = longitude, y = latitude, size = total, color = party), alpha = 1/2) +
-  scale_color_manual(values = c("#3333FF", "#EE3523", "#FED105", "#17aa5c", "#DDDDDD"))
+  geom_point(data = contributions.zip.party, aes(x = longitude, y = latitude, size = total, color = party), alpha = 1/2) +
+  scale_color_manual(values = party.colors)
 
+```
+
+Each point on the map represents a zipcode.
+
+The first chart shows number of donations. The second charts hows total donated.
+
+These two charts look similar, but when we compare them, it seems like Democratic
+money is more tightly concentrated around cities in the second chart than the first. 
+
+```{r echo = FALSE, Contribution_Party_Map_Facet}
 # Just Democratic.
 ca_base +
-  geom_point(data = contributions.city.party %>% filter(party == "Democratic"), 
+  geom_point(data = contributions.zip.party %>% filter(party == "Democratic"), 
              aes(x = longitude, y = latitude, size = n), 
              color = party.colors[1],
              alpha = 1/2) 
 
 # Just Republican.
 ca_base + 
-  geom_point(data = contributions.city.party %>% filter(party == "Republican"), 
+  geom_point(data = contributions.zip.party %>% filter(party == "Republican"), 
              aes(x = longitude, y = latitude, size = n), 
              color = party.colors[2],
              alpha = 1/2) 
 
 # Number of contributions, facet by party.
 ca_base + 
-  geom_point(data = contributions.city.party, aes(x = longitude, y = latitude, size = n, color=party), alpha = 1/2) +
+  geom_point(data = contributions.zip.party, aes(x = longitude, y = latitude, size = n, color=party), alpha = 1/2) +
   scale_color_manual(values = party.colors) +
   facet_wrap(~party)
 
 # Total of contributions, facet by party.
 ca_base + 
-  geom_point(data = contributions.city.party, aes(x = longitude, y = latitude, size = total, color=party), alpha = 1/2) +
+  geom_point(data = contributions.zip.party, aes(x = longitude, y = latitude, size = total, color=party), alpha = 1/2) +
   scale_color_manual(values = party.colors) +
   facet_wrap(~party)
 ```
 
-# Where are Clinton's Supporters? Bernie's Supporters?
+Tried faceting by party to see if anything stood out, but I don't think this set of 
+visualizations showed much more than the previous set.
 
-```{r}
-contributions.city.cand <- contributions.ca %>%
+# Where are Clinton's Supporters? Trump's Supporters?
+
+```{r echo=FALSE, Trump_Clinton}
+contributions.zip.cand <- contributions.ca %>%
   filter(election_tp == "P2016") %>%
-  group_by(city, cand_last_name) %>% 
+  group_by(zip, cand_last_name) %>% 
   summarise(
     total = sum(contb_receipt_amt),
     mean = mean(contb_receipt_amt),
@@ -643,26 +679,20 @@ contributions.city.cand <- contributions.ca %>%
     longitude = mean(longitude),
     n = n())
 
-dems = c("Clinton", "Sanders")
+cands = c("Clinton", "Trump")
 ca_base + 
-  geom_point(data = contributions.city.cand %>% filter(cand_last_name %in% dems), aes(x = longitude, y = latitude, size = total, color = cand_last_name))
+  geom_point(data = contributions.zip.cand %>% filter(cand_last_name %in% cands), aes(x = longitude, y = latitude, size = n, color = cand_last_name))
 
 ca_base + 
-  geom_point(data = contributions.city.cand %>% filter(cand_last_name %in% dems), aes(x = longitude, y = latitude, size = total, color = cand_last_name)) +
+  geom_point(data = contributions.zip.cand %>% filter(cand_last_name %in% cands), aes(x = longitude, y = latitude, size = n, color = cand_last_name)) +
   facet_wrap(~cand_last_name)
 ```
 
-```{r, echo = FALSE, Bay_Area_Party}
-contributions.zip.party <- contributions.ca %>%
-  group_by(zip, party) %>% 
-  summarise(
-    total = sum(contb_receipt_amt),
-    mean = mean(contb_receipt_amt),
-    median = median(contb_receipt_amt),
-    latitude = mean(latitude),
-    longitude = mean(longitude),
-    n = n())
+Similar to the differences between Republicans and Democrats, Clinton's support heavily draws
+from urban areas. Trump's support appears to be more evenly split.
 
+## Zoom into San Francisco Bay Area
+```{r, echo = FALSE, Bay_Area_Party}
 ca_base +
   geom_point(data = contributions.zip.party, aes(x = longitude, y = latitude, color = party, size = n), alpha = 1/2) +
   scale_color_manual(values = party.colors) + coord_fixed(xlim = c(-123.5, -121.2), ylim = c(35.8, 38.8), ratio = 1.3) 
@@ -678,48 +708,40 @@ p2 <- ca_base +
 grid.arrange(p1, p2, ncol = 2)
 ```
 
-Decided to zoom in on the Bay Area, and it looks like Democrats get a lot of their donations from urban cities than Republicans do.
+Zooming in on the Bay Area, and it looks like Democrats get a lot of their donations from urban cities than Republicans do.
 
-```{r, echo = FALSE, Sanders_Clinton_Bay}
-contributions.sf.cand <- contributions.ca %>%
-  filter(election_tp == "P2016") %>%
-  group_by(zip, cand_last_name) %>% 
-  summarise(
-    total = sum(contb_receipt_amt),
-    mean = mean(contb_receipt_amt),
-    median = median(contb_receipt_amt),
-    latitude = mean(latitude),
-    longitude = mean(longitude),
-    n = n())
+```{r, echo = FALSE, Clinton_Trump_Bay}
+sf_base <- ca_base + coord_fixed(xlim = c(-122.55, -122.3), ylim = c(37.65, 37.85), ratio = 1.3) 
 
-p1 <- ca_base + 
-  geom_point(data = contributions.sf.cand %>% filter(cand_last_name == "Sanders"), 
-             aes(x = longitude, y = latitude, size = n), 
+p1 <- sf_base + 
+  geom_point(data = contributions.zip.cand %>% filter(cand_last_name == "Clinton"), 
+             aes(x = longitude, y = latitude, size = total), 
              color = party.colors[1],
-             alpha = 1/2) +
-  coord_fixed(xlim = c(-123.5, -121.2), ylim = c(35.8, 38.8), ratio = 1.3)  
+             alpha = 1/2) 
 
-p2 <- ca_base + 
-  geom_point(data = contributions.sf.cand %>% filter(cand_last_name == "Clinton"), 
-             aes(x = longitude, y = latitude, size = n), 
+p2 <- sf_base + 
+  geom_point(data = contributions.zip.cand %>% filter(cand_last_name == "Trump"), 
+             aes(x = longitude, y = latitude, size = total), 
              color = party.colors[1],
-             alpha = 1/2) +
-  coord_fixed(xlim = c(-123.5, -121.2), ylim = c(35.8, 38.8), ratio = 1.3)  
+             alpha = 1/2)  
 
 grid.arrange(p1, p2, ncol = 2)
 ```
 
-Sanders and Clinton have very similar areas of support within the San Francisco Bay Area.
+Observations:
+
+* Some of the points appear to be in the water. Perhaps there are discrepancies between the lat/long coordinates we get from the `zipcode` dataset and that from `map_data`.
+* Trump has relatively more support on the perimeter of San Francisco than he does in the denser areas.
 
 # Multivariate Analysis
 
 ### Talk about some of the relationships you observed in this part of the investigation. Were there features that strengthened each other in terms of looking at your feature(s) of interest?
 
-The Democratic and Republican parties receive donations from similar areas, with the Democrats receiving more donations from more largely populated areas.
+The Democratic and Republican parties receive donations from similar areas, with the Democrats receiving more donations from more densely populated areas.
 
 ### Were there any interesting or surprising interactions between features?
 
-I expected to see some difference between Clinton and Sanders support geographically.
+I expected to see some difference between Clinton and Sanders support geographically but they were largely the same.
 
 ------
 
