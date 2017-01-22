@@ -20,6 +20,7 @@ library(mapdata)
 library(ggmap)
 library(zipcode)
 library(gridExtra)
+library(grid)
 ```
 
 ```{r echo=FALSE, results="hide", warning=FALSE, Load_the_Data}
@@ -808,10 +809,26 @@ Primary to General.
 
 ### Plot Three
 ```{r echo=FALSE, Plot_Three}
+occupation.sanders$name <- "Sanders"
+occupation.clinton$name <- "Clinton"
+occupation.trump$name <- "Trump"
+occupation.cruz$name <- "Cruz"
 
+combined <- rbind(occupation.sanders, occupation.clinton, occupation.trump, occupation.cruz)
+
+clinton <- p.clinton + ggtitle("Clinton") + xlab("Occupation") + ylab(NULL)
+sanders <- p.sanders + ggtitle("Sanders") + xlab(NULL) + ylab(NULL)
+trump <- p.trump + ggtitle("Trump") + xlab("Occupation") + ylab("% Donations")
+cruz <- p.cruz + ggtitle("Cruz") + xlab(NULL) + ylab("% Donations")
+
+grid.arrange(clinton, sanders, trump, cruz, top = textGrob("Top 10 Occupations Per Candidate"))
 ```
 
 ### Description Three
+
+This chart shows the Top 10 Occupations for each Candidate. I chose Clinton, Sanders, Trump, and Cruz because they were the top two candidates for their respective primaries. 
+
+Retirees make up the bulk of donations for each candidate except for Sanders, who drew a lot of his support from those listed as "Not Employed."
 
 ------
 
