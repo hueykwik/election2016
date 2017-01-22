@@ -748,16 +748,28 @@ I expected to see some difference between Clinton and Sanders support geographic
 # Final Plots and Summary
 
 ### Plot One
-```{r echo=FALSE, Plot_One}
-
+```{r echo=FALSE, warning = FALSE, Plot_One}
+ca_base + 
+  geom_point(data = contributions.zip.party %>% filter(party %in% c("Democratic", "Republican")), 
+             aes(x = longitude, y = latitude, size = n, color = party), 
+             alpha = 1/3) +
+  scale_size(name = "Number of Donations", range = c(0, 6)) + 
+  scale_color_manual(values = party.colors, name = "Party") +
+  ggtitle("Contributions by Party") +
+  theme_nothing()
 ```
 
 ### Description One
+Each point on the map represents a zipcode. The size of the point representing the number
+of donations for zipcode. The color of the point represents the political party.
 
+Over one million donations are visualized on this map. It's clear that both parties 
+draw support from more populated areas, but the Democrats especially draw support from
+urban cities.
 
 ### Plot Two
 ```{r echo=FALSE, Plot_Two}
-
+# clinton vs sanders using distributions, maybe color by election_tp
 ```
 
 ### Description Two
