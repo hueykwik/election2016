@@ -833,3 +833,9 @@ Retirees make up the bulk of donations for each candidate except for Sanders, wh
 ------
 
 # Reflection
+
+This data set contains information on more than 1 million donations to the 2016 Presidential election campaigns in California. I started by understanding the individual variables in the data set, and then I explored interesting questions and leads as I continued to make observations on plots. 
+
+Visualizations of the data helped me spot interesting problems in the data to fix. For instance, I needed to merge variants of the phrase "Self Employed" (like "Self-Employed" or "Self").
+
+Given that California is a solid Democratic supporting state, it was hard to tease out big differences between Republican and Democratic donations. I chose California because of my familiarity with the state, but looking at a swing state like Ohio or Pennsylvania may yield more interesting results.
