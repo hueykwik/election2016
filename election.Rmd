@@ -749,6 +749,15 @@ I expected to see some difference between Clinton and Sanders support geographic
 
 ### Plot One
 ```{r echo=FALSE, warning = FALSE, Plot_One}
+ditch_the_axes <- theme(
+  axis.text = element_blank(),
+  axis.line = element_blank(),
+  axis.ticks = element_blank(),
+  panel.border = element_blank(),
+  panel.grid = element_blank(),
+  axis.title = element_blank()
+  )
+
 ca_base + 
   geom_point(data = contributions.zip.party %>% filter(party %in% c("Democratic", "Republican")), 
              aes(x = longitude, y = latitude, size = n, color = party), 
@@ -756,7 +765,7 @@ ca_base +
   scale_size(name = "Number of Donations", range = c(0, 6)) + 
   scale_color_manual(values = party.colors, name = "Party") +
   ggtitle("Contributions by Party") +
-  theme_nothing()
+  ditch_the_axes
 ```
 
 ### Description One
@@ -770,10 +779,32 @@ urban cities.
 ### Plot Two
 ```{r echo=FALSE, Plot_Two}
 # clinton vs sanders using distributions, maybe color by election_tp
+
+main.dems <- contributions %>% filter(cand_last_name %in% c("Sanders", "Clinton"))
+main.dems <- main.dems %>% filter(election_tp %in% c("G2016", "P2016"))
+main.dems$cand_last_name <- factor(main.dems$cand_last_name, levels = c("Sanders", "Clinton"), ordered = TRUE)
+
+ggplot(data = main.dems, 
+       aes(x = contb_receipt_dt, fill = election_tp)) +
+  geom_histogram(bins = 60) + 
+  scale_x_date(date_breaks = "3 months") + 
+  ylab("Number of Donations") + 
+  xlab("Donation Date") + 
+  scale_fill_discrete(name = "Election Type", labels = c("General", "Primary")) +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
+  facet_wrap(~cand_last_name) +
+  ggtitle("Democratic Party Donations 2016")
 ```
 
 ### Description Two
+This chart shows the battle between Hillary Clinton and Bernie Sanders using number donations. 
 
+We can see that Sanders peak around late March and early April of 2016, where he wins nine out of ten contests over clinton.
+
+Donations decline as June 7th approaches, when Clinton clinches the nomination. 
+
+The Democratic National Conventoin was from July 25th to July 28th in 2016, where we see Clinton's donation types switch from
+Primary to General.
 
 ### Plot Three
 ```{r echo=FALSE, Plot_Three}
