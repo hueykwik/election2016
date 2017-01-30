@@ -817,7 +817,7 @@ draw support from more populated areas, but the Democrats especially draw suppor
 urban cities.
 
 ### Plot Two
-```{r echo=FALSE, Plot_Two}
+```{r echo=FALSE, Plot_Two, fig.width=12}
 # clinton vs sanders using distributions, maybe color by election_tp
 
 main.dems <- contributions %>% filter(cand_last_name %in% c("Sanders", "Clinton"))
@@ -848,7 +848,7 @@ The Democratic National Convention was from July 25th to July 28th in 2016, wher
 Primary to General.
 
 ### Plot Three
-```{r echo=FALSE, Plot_Three}
+```{r echo=FALSE, Plot_Three, fig.width=12}
 occupation.sanders$name <- "Sanders"
 occupation.clinton$name <- "Clinton"
 occupation.trump$name <- "Trump"
