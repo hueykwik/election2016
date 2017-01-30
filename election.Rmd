@@ -30,7 +30,8 @@ library(grid)
 # Load the Data
 # Warnings come from extra comma and end of each row, safe to ignore.
 contributions <- read_csv("ca.csv")   
-contributions$cand_last_name <- factor(str_split(contributions$cand_nm, ",", simplify = TRUE)[,1])
+contributions$cand_last_name <- factor(str_split(contributions$cand_nm, ",", 
+                                                 simplify = TRUE)[,1])
 contributions$cand_nm <- factor(contributions$cand_nm)
 contributions$election_tp <- factor(contributions$election_tp)
 
@@ -92,7 +93,8 @@ ggplot(data = contributions, aes(x = contb_receipt_amt)) +
 
 summary(contributions$contb_receipt_amt)
 
-sprintf("Number of negative contributions: %d", dim(contributions[contributions$contb_receipt_amt < 0,])[1])
+sprintf("Number of negative contributions: %d", 
+        dim(contributions[contributions$contb_receipt_amt < 0,])[1])
 
 ggplot(data=contributions, aes(x = contb_receipt_amt)) + 
   geom_histogram(binwidth=200) + 
@@ -182,7 +184,8 @@ data(zipcode)
 usa <- map_data("usa")
 states <- map_data("state")
 
-contributions.zipcodes <- data.frame(zip = unique(contributions$zip), stringsAsFactors = FALSE)
+contributions.zipcodes <- data.frame(zip = unique(contributions$zip), 
+                                     stringsAsFactors = FALSE)
 
 contributions.zipcodes <- inner_join(contributions.zipcodes, zipcode)
 
@@ -198,7 +201,8 @@ ggplot() +
 As you can see, there are contributions from outside of California.
 
 ```{r echo=FALSE, warning = FALSE, Non_CA_Zips}
-contributions %>% filter(state != "CA") %>% select(state, zip, city, contbr_city, contbr_st)
+contributions %>% filter(state != "CA") %>% select(state, zip, city, 
+                                                   contbr_city, contbr_st)
 ```
 
 Let's restrict our visualization to known California zipcodes:
@@ -210,7 +214,8 @@ ca_df <- subset(states, region == "california")
 contributions.zipcodes <- unique(substr(contributions$contbr_zip, 1, 5))
 #contributions.zipcodes <- as.numeric(contributions.zipcodes)
 
-contributions.zipcodes <- data.frame(zip = contributions.zipcodes, stringsAsFactors = FALSE)
+contributions.zipcodes <- data.frame(zip = contributions.zipcodes, 
+                                     stringsAsFactors = FALSE)
 
 contributions.zipcodes.ca <- inner_join(contributions.zipcodes, ca_zips)
 
@@ -356,10 +361,14 @@ CreatePlot <- function(df, x, y, ylabel) {
   p
 }
 
-CreatePlot(contributions.candidates, "cand_last_name", "n", "Number of Contributions")
-CreatePlot(contributions.candidates, "cand_last_name", "total", "Total Contributions, Dollars")
-CreatePlot(contributions.candidates, "cand_last_name", "mean", "Average Contribution, Dollars")
-CreatePlot(contributions.candidates, "cand_last_name", "median", "Median Contribution, Dollars")
+CreatePlot(contributions.candidates, "cand_last_name", 
+           "n", "Number of Contributions")
+CreatePlot(contributions.candidates, "cand_last_name", 
+           "total", "Total Contributions, Dollars")
+CreatePlot(contributions.candidates, "cand_last_name", 
+           "mean", "Average Contribution, Dollars")
+CreatePlot(contributions.candidates, "cand_last_name", 
+           "median", "Median Contribution, Dollars")
 
 # Bit surprised that HRC's median contribution is about the same as Bernie's. 
 # Look at raw data:
@@ -372,7 +381,8 @@ summary(contributions %>%
   filter(cand_nm == "Clinton, Hillary Rodham") %>%
   select(contb_receipt_amt))
 
-contributions$cand_last_name = factor(contributions$cand_last_name, levels=rev(cand.order), ordered=TRUE)
+contributions$cand_last_name = factor(contributions$cand_last_name, 
+                                      levels=rev(cand.order), ordered=TRUE)
 
 ggplot(data = contributions, aes(x = cand_last_name, y = contb_receipt_amt)) + 
   geom_boxplot() + coord_flip()
@@ -400,12 +410,14 @@ In the second box plot, I excluded negative contributions to see if we could see
 ```{r echo=FALSE, warning=FALSE, Campaign_Duration}
 ggplot(data = contributions, aes(x = contb_receipt_dt)) + geom_histogram()
 
-ggplot(data = subset(contributions, contributions$party == "Republican"), aes(x = contb_receipt_dt)) +
+ggplot(data = subset(contributions, contributions$party == "Republican"), 
+       aes(x = contb_receipt_dt)) +
   geom_histogram(bins = 100) +
   theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
   facet_wrap(~cand_last_name)
 
-ggplot(data = subset(contributions, contributions$party == "Democratic"), aes(x = contb_receipt_dt)) +
+ggplot(data = subset(contributions, contributions$party == "Democratic"), 
+       aes(x = contb_receipt_dt)) +
   geom_histogram(bins = 100) +
   theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
   facet_wrap(~cand_last_name)
@@ -447,7 +459,8 @@ ggplot(data = contributions.candidates, aes(x = total, y = n)) +
   scale_x_log10() +
   scale_y_log10()
 
-primaries <- inner_join(contributions.candidates, votes, by = c("cand_last_name" = "last_name"))
+primaries <- inner_join(contributions.candidates, votes, 
+                        by = c("cand_last_name" = "last_name"))
 ```
 
 Here we look at a scatter log-log plot of total amount raised vs number of donations. It's clear that there is a positive correlation here. This makes sense intuitively, especially when you consider that individual campaign contributions are capped at $2,700. This requires many small donations in order to raise a lot of money.
@@ -481,9 +494,11 @@ This is on a log-log scale. There seems to be a positive correlation here.
 contributions.ca <- contributions %>% filter(state == "CA")
 
 ggplot() + 
-  geom_polygon(data = ca_df, aes(x = long, y = lat, group = group), fill=NA, color="black") + 
+  geom_polygon(data = ca_df, aes(x = long, y = lat, group = group), 
+               fill=NA, color="black") + 
   coord_fixed(1.3) +
-  geom_point(data = contributions.ca, aes(x = longitude, y = latitude, color = party), alpha = 1/10) +
+  geom_point(data = contributions.ca, aes(x = longitude, y = latitude, color = party), 
+             alpha = 1/10) +
   scale_color_manual(values = party.colors)
 ```
 
@@ -493,9 +508,11 @@ domination by Democrats.
 ## Party vs. Occupation 
 ```{r echo=FALSE, warning=FALSE, Party_Occupation}
 
-occupation.d <- MakeTopNDataFrame(contributions %>% filter(party == "Democratic"), "contbr_occupation")
+occupation.d <- MakeTopNDataFrame(contributions %>% filter(party == "Democratic"), 
+                                  "contbr_occupation")
 
-occupation.r <- MakeTopNDataFrame(contributions %>% filter(party == "Republican"), "contbr_occupation")
+occupation.r <- MakeTopNDataFrame(contributions %>% filter(party == "Republican"), 
+                                  "contbr_occupation")
 
 p.dem <- ggplot(data = occupation.d, aes(x = contbr_occupation, y = pct)) + 
   geom_bar(stat = "identity") +
@@ -534,9 +551,11 @@ Just Republicans:
 
 ## Party vs. Employer
 ```{r echo = FALSE}
-occupation.d <- MakeTopNDataFrame(contributions %>% filter(party == "Democratic"), "contbr_employer")
+occupation.d <- MakeTopNDataFrame(contributions %>% filter(party == "Democratic"), 
+                                  "contbr_employer")
 
-occupation.r <- MakeTopNDataFrame(contributions %>% filter(party == "Republican"), "contbr_employer")
+occupation.r <- MakeTopNDataFrame(contributions %>% filter(party == "Republican"), 
+                                  "contbr_employer")
 
 p.dem <- ggplot(data = occupation.d, aes(x = contbr_employer, y = pct)) + 
   geom_bar(stat = "identity") +
@@ -555,8 +574,10 @@ Nothing interesting when comparing party vs. employer.
 ```{r echo = FALSE, warning=FALSE, Candidate_Occupation}
 occupation.sanders <- MakeTopNDataFrame(contributions %>% filter(cand_last_name == "Sanders"), "contbr_occupation")
 occupation.clinton <- MakeTopNDataFrame(contributions %>% filter(cand_last_name == "Clinton"), "contbr_occupation")
-occupation.trump <- MakeTopNDataFrame(contributions %>% filter(cand_last_name == "Trump"), "contbr_occupation")
-occupation.cruz <- MakeTopNDataFrame(contributions %>% filter(cand_last_name == "Cruz"), "contbr_occupation")
+occupation.trump <- MakeTopNDataFrame(contributions %>% filter(cand_last_name == "Trump"), 
+                                      "contbr_occupation")
+occupation.cruz <- MakeTopNDataFrame(contributions %>% filter(cand_last_name == "Cruz"), 
+                                     "contbr_occupation")
 
 p.sanders <- ggplot(data = occupation.sanders, aes(x = contbr_occupation, y = pct)) + 
   geom_bar(stat = "identity") +
@@ -622,11 +643,13 @@ ca_base <- ggplot() +
 
 # All five parties at once.
 ca_base +
-  geom_point(data = contributions.zip.party, aes(x = longitude, y = latitude, color = party, size = n), alpha = 1/2) +
+  geom_point(data = contributions.zip.party, 
+             aes(x = longitude, y = latitude, color = party, size = n), alpha = 1/2) +
   scale_color_manual(values = party.colors)
 
 ca_base + 
-  geom_point(data = contributions.zip.party, aes(x = longitude, y = latitude, size = total, color = party), alpha = 1/2) +
+  geom_point(data = contributions.zip.party, 
+             aes(x = longitude, y = latitude, size = total, color = party), alpha = 1/2) +
   scale_color_manual(values = party.colors)
 
 ```
@@ -655,13 +678,15 @@ ca_base +
 
 # Number of contributions, facet by party.
 ca_base + 
-  geom_point(data = contributions.zip.party, aes(x = longitude, y = latitude, size = n, color=party), alpha = 1/2) +
+  geom_point(data = contributions.zip.party, 
+             aes(x = longitude, y = latitude, size = n, color=party), alpha = 1/2) +
   scale_color_manual(values = party.colors) +
   facet_wrap(~party)
 
 # Total of contributions, facet by party.
 ca_base + 
-  geom_point(data = contributions.zip.party, aes(x = longitude, y = latitude, size = total, color=party), alpha = 1/2) +
+  geom_point(data = contributions.zip.party, 
+             aes(x = longitude, y = latitude, size = total, color=party), alpha = 1/2) +
   scale_color_manual(values = party.colors) +
   facet_wrap(~party)
 ```
@@ -685,10 +710,12 @@ contributions.zip.cand <- contributions.ca %>%
 
 cands = c("Clinton", "Trump")
 ca_base + 
-  geom_point(data = contributions.zip.cand %>% filter(cand_last_name %in% cands), aes(x = longitude, y = latitude, size = n, color = cand_last_name))
+  geom_point(data = contributions.zip.cand %>% filter(cand_last_name %in% cands), 
+             aes(x = longitude, y = latitude, size = n, color = cand_last_name))
 
 ca_base + 
-  geom_point(data = contributions.zip.cand %>% filter(cand_last_name %in% cands), aes(x = longitude, y = latitude, size = n, color = cand_last_name)) +
+  geom_point(data = contributions.zip.cand %>% filter(cand_last_name %in% cands), 
+             aes(x = longitude, y = latitude, size = n, color = cand_last_name)) +
   facet_wrap(~cand_last_name)
 ```
 
@@ -698,16 +725,21 @@ from urban areas. Trump's support appears to be more evenly split.
 ## Zoom into San Francisco Bay Area
 ```{r, echo = FALSE, Bay_Area_Party}
 ca_base +
-  geom_point(data = contributions.zip.party, aes(x = longitude, y = latitude, color = party, size = n), alpha = 1/2) +
-  scale_color_manual(values = party.colors) + coord_fixed(xlim = c(-123.5, -121.2), ylim = c(35.8, 38.8), ratio = 1.3) 
+  geom_point(data = contributions.zip.party, 
+             aes(x = longitude, y = latitude, color = party, size = n), alpha = 1/2) +
+  scale_color_manual(values = party.colors) + 
+  coord_fixed(xlim = c(-123.5, -121.2), ylim = c(35.8, 38.8), ratio = 1.3) 
 
 p1 <- ca_base +
-  geom_point(data = contributions.zip.party %>% filter(party == "Republican"), aes(x = longitude, y = latitude, color = party, size = n), alpha = 1/2) +
-  scale_color_manual(values = party.colors) + coord_fixed(xlim = c(-123.5, -121.2), ylim = c(35.8, 38.8), ratio = 1.3) 
+  geom_point(data = contributions.zip.party %>% filter(party == "Republican"), 
+             aes(x = longitude, y = latitude, color = party, size = n), alpha = 1/2) +
+  scale_color_manual(values = party.colors) + 
+  coord_fixed(xlim = c(-123.5, -121.2), ylim = c(35.8, 38.8), ratio = 1.3) 
 
 p2 <- ca_base +
   geom_point(data = contributions.zip.party %>% filter(party == "Democratic"), aes(x = longitude, y = latitude, color = party, size = n), alpha = 1/2) +
-  scale_color_manual(values = party.colors) + coord_fixed(xlim = c(-123.5, -121.2), ylim = c(35.8, 38.8), ratio = 1.3) 
+  scale_color_manual(values = party.colors) + 
+  coord_fixed(xlim = c(-123.5, -121.2), ylim = c(35.8, 38.8), ratio = 1.3) 
 
 grid.arrange(p1, p2, ncol = 2)
 ```
@@ -715,7 +747,8 @@ grid.arrange(p1, p2, ncol = 2)
 Zooming in on the Bay Area, and it looks like Democrats get a lot of their donations from urban cities than Republicans do.
 
 ```{r, echo = FALSE, Clinton_Trump_Bay}
-sf_base <- ca_base + coord_fixed(xlim = c(-122.55, -122.3), ylim = c(37.65, 37.85), ratio = 1.3) 
+sf_base <- ca_base + coord_fixed(xlim = c(-122.55, -122.3), ylim = c(37.65, 37.85), 
+                                 ratio = 1.3) 
 
 p1 <- sf_base + 
   geom_point(data = contributions.zip.cand %>% filter(cand_last_name == "Clinton"), 
@@ -763,7 +796,8 @@ ditch_the_axes <- theme(
   )
 
 ca_base + 
-  geom_point(data = contributions.zip.party %>% filter(party %in% c("Democratic", "Republican")), 
+  geom_point(data = contributions.zip.party %>% 
+               filter(party %in% c("Democratic", "Republican")), 
              aes(x = longitude, y = latitude, size = n, color = party), 
              alpha = 1/3) +
   scale_size(name = "Number of Donations", range = c(0, 6)) + 
@@ -786,7 +820,8 @@ urban cities.
 
 main.dems <- contributions %>% filter(cand_last_name %in% c("Sanders", "Clinton"))
 main.dems <- main.dems %>% filter(election_tp %in% c("G2016", "P2016"))
-main.dems$cand_last_name <- factor(main.dems$cand_last_name, levels = c("Sanders", "Clinton"), ordered = TRUE)
+main.dems$cand_last_name <- factor(main.dems$cand_last_name, 
+                                   levels = c("Sanders", "Clinton"), ordered = TRUE)
 
 ggplot(data = main.dems, 
        aes(x = contb_receipt_dt, fill = election_tp)) +
