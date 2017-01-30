@@ -461,9 +461,11 @@ ggplot(data = contributions.candidates, aes(x = total, y = n)) +
 
 primaries <- inner_join(contributions.candidates, votes, 
                         by = c("cand_last_name" = "last_name"))
+
+with(contributions.candidates, cor.test(x = total, y = n, method = "pearson"))
 ```
 
-Here we look at a scatter log-log plot of total amount raised vs number of donations. It's clear that there is a positive correlation here. This makes sense intuitively, especially when you consider that individual campaign contributions are capped at $2,700. This requires many small donations in order to raise a lot of money.
+Here we look at a scatter log-log plot of total amount raised vs number of donations. It's clear that there is a positive correlation here (Pearson correlation of 0.94). This makes sense intuitively, especially when you consider that individual campaign contributions are capped at $2,700. This requires many small donations in order to raise a lot of money.
 
 ## Delegate Count vs. Number of Donations
 ```{r}
